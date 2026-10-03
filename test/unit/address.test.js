@@ -51,12 +51,16 @@ const SECRET = '0'.repeat(63) + '1'
 
 test('a bare link is just the root', (t) => {
   t.is(formatLink({ root: ROOT }), `swarmwire://${ROOT}`)
-  t.alike(parseLink(`swarmwire://${ROOT}`), { root: ROOT, size: null, name: null, secret: null })
+  t.alike(parseLink(`swarmwire://${ROOT}`), {
+    root: ROOT, size: null, name: null, secret: null, type: null
+  })
 })
 
 test('hints round-trip', (t) => {
   const link = formatLink({ root: ROOT, size: 1234, name: 'my holidays.mp4', secret: SECRET })
-  t.alike(parseLink(link), { root: ROOT, size: 1234, name: 'my holidays.mp4', secret: SECRET })
+  t.alike(parseLink(link), {
+    root: ROOT, size: 1234, name: 'my holidays.mp4', secret: SECRET, type: null
+  })
 })
 
 test('names are percent-encoded, so a link is always one token', (t) => {
@@ -77,7 +81,7 @@ test('links are emitted as hex, never z32', (t) => {
 
 test('unknown parameters are ignored, so links stay forward-compatible', (t) => {
   t.alike(parseLink(`swarmwire://${ROOT}?future=1&s=7`), {
-    root: ROOT, size: 7, name: null, secret: null
+    root: ROOT, size: 7, name: null, secret: null, type: null
   })
 })
 
@@ -152,3 +156,16 @@ function h (prefix, ...hexParts) {
   const parts = [b4a.from(prefix, 'ascii'), ...hexParts.map((p) => b4a.from(p, 'hex'))]
   return b4a.from(blake3.hashHex(b4a.concat(parts)), 'hex')
 }
+
+test('a collection link says so', (t) => {
+  const link = formatLink({ root: ROOT, type: 'collection' })
+
+  t.ok(link.endsWith('?t=c'))
+  t.is(parseLink(link).type, 'collection')
+  t.is(parseLink(`swarmwire://${ROOT}`).type, null, 'a plain link is a plain file')
+})
+
+test('an unknown link type is refused when building, ignored when parsing', (t) => {
+  t.exception(() => formatLink({ root: ROOT, type: 'folder' }), /unknown link type/)
+  t.is(parseLink(`swarmwire://${ROOT}?t=zzz`).type, null, 'a later version may add types')
+})

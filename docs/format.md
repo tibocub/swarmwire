@@ -64,6 +64,7 @@ swarmwire://<root-hex>[?s=<size>][&n=<name>][&k=<secret-hex>]
 | `s` | Size hint in bytes. Lets the receiver preallocate and show progress before any peer answers. Unverified until the content is complete. |
 | `n` | Filename hint, percent-encoded. Display only — never used as a path without sanitising. |
 | `k` | 32-byte swarm key, hex. See §4. |
+| `t` | What the content is: `c` for a collection (§6). Absent means a plain file. |
 
 A link with no parameters is valid and sufficient: everything else is an optimisation or a
 privacy choice.
@@ -124,12 +125,41 @@ it may be *displayed* as a word sequence from a fixed wordlist, hyperbeam-style.
 display encoding of the same bytes, never a second kind of secret: words in, bytes out, same
 topic. Not in v0.
 
+## 6. Collections
+
+A folder is shared as a **manifest**: a list of the files in it, each named by its address.
+The manifest is itself content, so it has an address like anything else — sharing a folder is
+sharing one link, and the receiver fetches the manifest first and then the files it names.
+
+```json
+{"swarmwire":"collection/v0","files":[{"path":"photos/one.jpg","root":"<hex>","size":70000}]}
+```
+
+The encoding is canonical, because the manifest's bytes are its identity and the same folder
+must produce the same address on every machine: entries sorted by path, no incidental
+whitespace, paths with forward slashes and no `.` segments. A folder packed on Windows and the
+same folder packed on Linux have the same address.
+
+**Paths are validated, never repaired.** A manifest arrives from a stranger, and a path is
+refused — rather than normalised — if it is absolute, contains `..`, is empty, carries a drive
+letter or control characters, or is simply not already canonical. Quietly turning
+`/etc/passwd` into `etc/passwd` would write somewhere the sender did not name. Two entries for
+the same path are refused too, since which one won would otherwise depend on arrival order.
+
+Collections are immutable, like everything else here: change a file and you have a different
+manifest with a different address. Folders that change are SwarmFS's problem, one layer up.
+
+**Discovery:** only the manifest's root is announced. The files are fetched over the
+connections that topic already produced, so a folder of a thousand files still costs one
+announce.
+
 ## 5. Stability rules
 
 **Fixed for v0 — changing any of these invalidates existing links:**
 
 - The address is the plain BLAKE3 hash of the content
-- The link scheme, the hex encoding of the root, and the meaning of `s`, `n`, `k`
+- The link scheme, the hex encoding of the root, and the meaning of `s`, `n`, `k`, `t`
+- The collection manifest's encoding, including that entries are sorted by path
 - The domain-separation strings `swarmwire/v0/discovery` and `swarmwire/v0/swarm`
 
 **Free to change at any time** (negotiated per connection, never stored in a link): chunk group

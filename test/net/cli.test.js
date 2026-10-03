@@ -7,12 +7,13 @@
 
 import test from 'brittle'
 import createTestnet from '@hyperswarm/testnet'
+import fs from 'fs'
 import { spawn } from 'child_process'
 import path from 'path'
 import process from 'process'
 import { fileURLToPath } from 'url'
 
-import { tmpdir, writeSample, read } from '../helpers/tmp.js'
+import { tmpdir, writeSample, sample, read } from '../helpers/tmp.js'
 
 const CLI = fileURLToPath(new URL('../../bin/swarmwire.js', import.meta.url))
 
@@ -88,3 +89,28 @@ function run (t, args) {
 function sleep (ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
+
+test('a folder goes as one link and arrives as a folder', async (t) => {
+  const testnet = await createTestnet(3, { teardown: t.teardown })
+  const bootstrap = `${testnet.bootstrap[0].host}:${testnet.bootstrap[0].port}`
+
+  const dir = tmpdir(t)
+  const source = path.join(dir, 'album')
+  fs.mkdirSync(path.join(source, 'tracks'), { recursive: true })
+  fs.writeFileSync(path.join(source, 'cover.bin'), sample(20000))
+  fs.writeFileSync(path.join(source, 'tracks/one.bin'), sample(50000))
+  fs.writeFileSync(path.join(source, 'tracks/two.bin'), sample(30000))
+
+  const sender = run(t, ['send', source, '--bootstrap', bootstrap])
+  const link = (await sender.firstLine()).trim()
+  t.ok(link.includes('t=c'), 'the link says it is a collection')
+
+  const out = path.join(dir, 'received')
+  const receiver = run(t, ['get', link, out, '--bootstrap', bootstrap])
+  t.is(await receiver.exit(), 0)
+
+  t.alike(read(path.join(out, 'cover.bin')), read(path.join(source, 'cover.bin')))
+  t.alike(read(path.join(out, 'tracks/one.bin')), read(path.join(source, 'tracks/one.bin')))
+  t.alike(read(path.join(out, 'tracks/two.bin')), read(path.join(source, 'tracks/two.bin')))
+  t.absent(fs.existsSync(path.join(out, '.swarmwire-manifest')), 'and leaves no scratch behind')
+})

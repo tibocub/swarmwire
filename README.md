@@ -19,6 +19,14 @@ fetching 10db6398a68dff50... into holidays.mp4
 44800/44800 groups (100%)
 ```
 
+A folder goes the same way, as one link:
+
+```
+$ swarmwire send ./album
+swarmwire://2f91…c4a7?s=412&n=album&k=…&t=c
+serving ./album (3 files, 97.7 KiB)
+```
+
 > Status: **pre-alpha.** Transfers work end to end, over a real swarm, with resume and
 > verification. Multi-peer scheduling is still naive and there are no request timeouts yet —
 > see [docs/roadmap.md](docs/roadmap.md) for what M2 adds.

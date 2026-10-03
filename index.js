@@ -1,11 +1,12 @@
 /**
  * swarmwire - content-addressed file transfer between filesystems, over Hyperswarm.
  *
- * See docs/roadmap.md for what exists; the real-swarm adapter and CLI land next.
+ * Runs on Node and on Bare. See docs/roadmap.md for what exists and what is next.
  */
 
 export { Swarmwire, Download } from './lib/swarmwire.js'
 export { rootOf, formatLink, parseLink, discoveryTopic, swarmTopic, SCHEME } from './lib/address.js'
-export { ContentSource } from './lib/source.js'
+export { ContentSource, MemorySource } from './lib/source.js'
+export { encodeManifest, decodeManifest, isSafePath, MANIFEST_TYPE } from './lib/collection.js'
 export { Destination } from './lib/destination.js'
 export { verifyGroup, groupCount, groupRange, groupLength, DEFAULT_GROUP_LOG } from './lib/tree.js'

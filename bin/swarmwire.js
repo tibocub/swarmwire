@@ -15,11 +15,12 @@ import b4a from 'b4a'
 
 import { Swarmwire } from '../lib/swarmwire.js'
 import { parseLink } from '../lib/address.js'
+import * as fsx from '../lib/fs.js'
 
 const USAGE = `swarmwire - content-addressed file transfer, peer to peer
 
-  swarmwire send <path> [options]     share a file; prints a link
-  swarmwire get <link> [output]       fetch a file by link
+  swarmwire send <path> [options]     share a file or folder; prints a link
+  swarmwire get <link> [output]       fetch a file or folder by link
 
 Options:
   --public            anyone who knows the hash can find you (default: private)
@@ -50,10 +51,18 @@ async function send (path, flags) {
 
   // A private link carries its own secret, so only people holding it can find you.
   const secret = flags.public ? null : b4a.toString(crypto.randomBytes(32), 'hex')
-  const { link, size } = await node.serve(path, { secret })
+  const folder = await isDirectory(path)
+
+  const { link, size, files } = folder
+    ? await node.serveCollection(path, { secret })
+    : await node.serve(path, { secret })
 
   print(link)
-  warn(`serving ${path} (${bytes(size)})${flags.public ? ' publicly' : ''}`)
+  warn(
+    folder
+      ? `serving ${path} (${files} files, ${bytes(size)})${flags.public ? ' publicly' : ''}`
+      : `serving ${path} (${bytes(size)})${flags.public ? ' publicly' : ''}`
+  )
   warn('keep this running; ctrl-c to stop')
 
   swarm.on('connection', () => warn(`peers: ${swarm.connections.size}`))
@@ -76,12 +85,21 @@ async function get (link, output, flags) {
 
   warn(`fetching ${parsed.root.slice(0, 16)}... into ${out}`)
 
-  const download = node.download(parsed, out)
-  download.on('progress', ({ have, total }) => {
-    warn(`${have}/${total} groups (${Math.round((have / total) * 100)}%)`)
-  })
+  if (parsed.type === 'collection') {
+    const result = await node.downloadCollection(parsed, out, {
+      onfile: ({ path, size }) => warn(`  ${path} (${bytes(size)})`)
+    })
 
-  await download
+    warn(`${result.files} files, ${bytes(result.bytes)}`)
+  } else {
+    const download = node.download(parsed, out)
+    download.on('progress', ({ have, total }) => {
+      warn(`${have}/${total} groups (${Math.round((have / total) * 100)}%)`)
+    })
+
+    await download
+  }
+
   print(out)
 
   await node.destroy()
@@ -104,6 +122,13 @@ function createSwarm ({ bootstrap }) {
   })
 
   return new Hyperswarm({ dht })
+}
+
+async function isDirectory (path) {
+  const info = await fsx.stat(path)
+  if (info === null) throw new Error(`no such file or folder: ${path}`)
+
+  return info.directory
 }
 
 /** A filename hint is a hint: never let it climb out of the working directory. */

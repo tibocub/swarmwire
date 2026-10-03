@@ -100,12 +100,20 @@ that models a link which is both slow and distant.
 original sender mid-transfer still completes the download. The second half is done; the first
 is waiting on a benchmark that can measure it.
 
-### M3 — Collections
+### M3 — Collections ✅
 
 A minimal immutable manifest so a folder is one link. Deliberately dumb: a list of
 `(relative path, root, size)`, itself content-addressed. Mutation stays upstairs in SwarmFS.
 
-**Done when:** a directory can be sent and received as a single link, with per-file resume.
+**Done:** `swarmwire send ./folder` prints one link and `swarmwire get <link> ./out` rebuilds
+the folder, proved between two CLI processes over a real swarm. The manifest is served from
+memory, so sharing a folder does not add a file to it, and only the manifest's root is
+announced — a thousand files still cost one announce. Per-file resume comes free, since each
+file is an ordinary transfer.
+
+Paths out of a manifest are validated rather than repaired: absolute paths, `..`, drive
+letters, control characters, duplicates and non-canonical spellings are all refused. A folder
+packed on Windows has the same address as the same folder packed on Linux.
 
 ### M4 — Handover to SwarmFS
 
