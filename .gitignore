@@ -1,0 +1,15 @@
+node_modules
+out
+test-*
+*.tmp
+
+# Scratch data produced by running the examples or manual swarm tests.
+.swarmwire-test-data/
+
+# Claude Code local state (may contain machine-local permissions/session data).
+.claude/settings.local.json
+.claude/.credentials.json
+
+# Byproducts of spec-kit's Python-based tooling scripts, if spec-kit is added here.
+__pycache__/
+*.pyc
