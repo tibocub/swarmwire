@@ -19,6 +19,17 @@ Anything that cannot be expressed that way is out of scope.
 Allowed dependencies: `hyperswarm`, `protomux`, `compact-encoding`, `b4a`, `blake3-bao`,
 `hypercore-crypto` (for keypairs only — it does not pull in hypercore itself).
 
+## Runtime targets: Node **and** Bare
+
+Mobile apps are the reason. Everything here must run on Bare as well as Node:
+
+- **No `Buffer`.** Use `b4a` for every byte operation.
+- **No `node:` builtins imported directly.** Filesystem access goes behind a small adapter so
+  Bare can supply `bare-fs`; same for anything else platform-shaped.
+- **No native modules, no WASM-only paths.** `blake3-bao`'s ESM builds are pure JavaScript and
+  use no `Buffer` — that was checked, and it is why they were chosen over a Rust binding.
+- Do not add a dependency without checking it the same way.
+
 ## Invariants
 
 1. **The address is the plain BLAKE3 hash of the content.** Not a custom tree, not a hash of
@@ -29,6 +40,8 @@ Allowed dependencies: `hyperswarm`, `protomux`, `compact-encoding`, `b4a`, `blak
 4. **Size and filename from peers or links are hints.** Never trusted, never used as a path
    without sanitising.
 5. **Unknown wire messages are ignored, not errors.** Old peers must survive new message types.
+6. **A workspace costs one announce, not one per file.** Per-content topics are for links;
+   groups of peers meet on a swarm topic and ask each other for roots over the connection.
 
 Changing an invariant means changing this list in the same commit, with the reason.
 

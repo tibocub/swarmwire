@@ -1,8 +1,9 @@
 import test from 'brittle'
 import blake3 from 'blake3-bao/blake3'
 import * as bao from 'blake3-bao/bao'
+import b4a from 'b4a'
 
-import { rootOf, formatLink, parseLink, discoveryTopic } from '../../lib/address.js'
+import { rootOf, formatLink, parseLink, discoveryTopic, swarmTopic } from '../../lib/address.js'
 
 // ---------------------------------------------------------------------------
 // Addressing. These are the BLAKE3 spec's own vectors: if they ever change,
@@ -10,35 +11,35 @@ import { rootOf, formatLink, parseLink, discoveryTopic } from '../../lib/address
 // ---------------------------------------------------------------------------
 
 test('root of empty content is the BLAKE3 empty-input vector', (t) => {
-  t.is(rootOf(Buffer.alloc(0)), 'af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262')
+  t.is(rootOf(b4a.alloc(0)), 'af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262')
 })
 
 test('root of "abc" is the BLAKE3 vector', (t) => {
-  t.is(rootOf(Buffer.from('abc')), '6437b3ac38465133ffb63b75273a8db548c558465d79db03fd359c6cd5bd9d85')
+  t.is(rootOf(b4a.from('abc')), '6437b3ac38465133ffb63b75273a8db548c558465d79db03fd359c6cd5bd9d85')
 })
 
 test('root is the plain BLAKE3 hash, not a custom tree', (t) => {
   const data = sample(300 * 1024)
-  t.is(rootOf(data), blake3.hashHex(new Uint8Array(data)))
+  t.is(rootOf(data), blake3.hashHex(data))
 })
 
 test('root is independent of chunk group size', (t) => {
   const data = sample(300 * 1024)
   const expected = rootOf(data)
 
-  t.is(hex(bao.baoEncode(new Uint8Array(data), true).hash), expected, 'plain bao')
-  t.is(hex(bao.baoEncodeIroh(new Uint8Array(data), true, 4).hash), expected, '16 KiB groups')
-  t.is(hex(bao.baoEncodeIroh(new Uint8Array(data), true, 8).hash), expected, '256 KiB groups')
+  t.is(hex(bao.baoEncode(data, true).hash), expected, 'plain bao')
+  t.is(hex(bao.baoEncodeIroh(data, true, 4).hash), expected, '16 KiB groups')
+  t.is(hex(bao.baoEncodeIroh(data, true, 8).hash), expected, '256 KiB groups')
 })
 
 test('a range verifies against the root without the whole file', (t) => {
   const data = sample(300 * 1024)
-  const encoded = bao.baoEncode(new Uint8Array(data), false)
+  const encoded = bao.baoEncode(data, false)
 
   const slice = bao.baoSlice(encoded.encoded, 100000, 4096)
   const verified = bao.baoDecodeSlice(slice, encoded.hash, 100000, 4096)
 
-  t.alike(Buffer.from(verified), data.subarray(100000, 104096))
+  t.alike(b4a.from(verified), b4a.from(data.subarray(100000, 104096)))
   t.ok(slice.length < data.length / 8, 'proof is small relative to the content')
 })
 
@@ -70,6 +71,17 @@ test('a name that is a path is kept as a hint but never a path', (t) => {
   t.is(parseLink(formatLink({ root: ROOT, name: '../../etc/passwd' })).name, '../../etc/passwd')
 })
 
+test('links are emitted as hex, never z32', (t) => {
+  // A root is a BLAKE3 hash, so a link must be comparable to `b3sum <file>` output.
+  t.ok(formatLink({ root: ROOT }).includes(ROOT))
+})
+
+test('unknown parameters are ignored, so links stay forward-compatible', (t) => {
+  t.alike(parseLink(`swarmwire://${ROOT}?future=1&s=7`), {
+    root: ROOT, size: 7, name: null, secret: null
+  })
+})
+
 test('malformed links are rejected', (t) => {
   t.exception(() => parseLink('http://example.com'), /scheme/i)
   t.exception(() => parseLink('swarmwire://nothex'), /root/i)
@@ -84,40 +96,60 @@ test('malformed links are rejected', (t) => {
 // Discovery
 // ---------------------------------------------------------------------------
 
-test('topic is derived from the root alone when public', (t) => {
+test('content topic is derived from the root alone when public', (t) => {
   const topic = discoveryTopic(ROOT)
   t.is(topic.length, 32)
   t.alike(discoveryTopic(ROOT), topic, 'deterministic')
 })
 
-test('a secret changes the topic', (t) => {
+test('a swarm key changes the content topic', (t) => {
   t.unlike(hex(discoveryTopic(ROOT, SECRET)), hex(discoveryTopic(ROOT)))
+})
+
+test('different content lands on different topics', (t) => {
+  t.unlike(hex(discoveryTopic('f'.repeat(64))), hex(discoveryTopic(ROOT)))
+})
+
+test('a swarm topic is derived from the swarm key alone', (t) => {
+  // A group of peers meets whatever they hold: one announce for a whole workspace.
+  const topic = swarmTopic(SECRET)
+  t.is(topic.length, 32)
+  t.alike(swarmTopic(SECRET), topic, 'deterministic')
+})
+
+test('swarm topics and content topics never collide', (t) => {
+  // Domain separation: the same 32 bytes used as a swarm key and as a root must not
+  // put peers on the same topic.
+  t.unlike(hex(swarmTopic(ROOT)), hex(discoveryTopic(ROOT)))
+  t.unlike(hex(swarmTopic(SECRET)), hex(discoveryTopic(ROOT, SECRET)))
 })
 
 test('topic derivation is pinned', (t) => {
   // Changing these strings splits the network: old peers announce elsewhere.
   t.is(hex(discoveryTopic(ROOT)), hex(h('swarmwire/v0/discovery', ROOT)))
   t.is(hex(discoveryTopic(ROOT, SECRET)), hex(h('swarmwire/v0/discovery', ROOT, SECRET)))
+  t.is(hex(swarmTopic(SECRET)), hex(h('swarmwire/v0/swarm', SECRET)))
 })
 
-test('different content lands on different topics', (t) => {
-  const other = 'f'.repeat(64)
-  t.unlike(hex(discoveryTopic(other)), hex(discoveryTopic(ROOT)))
+test('bad topic inputs are rejected', (t) => {
+  t.exception(() => discoveryTopic('nothex'), /root/i)
+  t.exception(() => discoveryTopic(ROOT, 'nothex'), /swarmKey/i)
+  t.exception(() => swarmTopic('nothex'), /swarmKey/i)
 })
 
 // ---------------------------------------------------------------------------
 
 function sample (n) {
-  const b = Buffer.alloc(n)
+  const b = b4a.alloc(n)
   for (let i = 0; i < n; i++) b[i] = (i * 7) & 0xff
   return b
 }
 
 function hex (u8) {
-  return Buffer.from(u8).toString('hex')
+  return b4a.toString(b4a.from(u8), 'hex')
 }
 
 function h (prefix, ...hexParts) {
-  const parts = [Buffer.from(prefix, 'ascii'), ...hexParts.map((p) => Buffer.from(p, 'hex'))]
-  return Buffer.from(blake3.hashHex(new Uint8Array(Buffer.concat(parts))), 'hex')
+  const parts = [b4a.from(prefix, 'ascii'), ...hexParts.map((p) => b4a.from(p, 'hex'))]
+  return b4a.from(blake3.hashHex(b4a.concat(parts)), 'hex')
 }

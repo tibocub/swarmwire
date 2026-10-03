@@ -1,17 +1,14 @@
-# The swarmwire format — v0 (DRAFT)
+# The swarmwire format — v0
 
 Everything here ends up inside links that people share and store. Links must keep working after
 the engine has been rewritten three times, so this document changes slowly and deliberately,
 and everything in it is pinned by tests in `test/unit/`.
 
-**Status: draft.** Open questions are listed at the bottom; they must be closed before the first
-link is shared outside a test.
-
 ## 1. Addressing
 
 **A content address is the 32-byte BLAKE3 hash of the content.** Nothing custom, nothing
-swarmwire-specific: it is the value `b3sum` prints, and the value iroh and any other BLAKE3 tool
-agree on.
+swarmwire-specific: it is the value `b3sum` prints, and the value any other BLAKE3 tool agrees
+on.
 
 Two consequences worth stating plainly:
 
@@ -28,7 +25,7 @@ hash is what is enforced.
 ## 2. Verification
 
 Ranges are verified with [bao](https://github.com/oconnor663/bao) verified streaming, as
-implemented by `blake3-bao`.
+implemented by the pure-JavaScript `blake3-bao`.
 
 - A sender keeps an **outboard** tree for the content it serves — hashes only, no data copy.
 - For a requested byte range, the sender produces a **slice**: the range plus the minimal set of
@@ -37,18 +34,23 @@ implemented by `blake3-bao`.
   sends one bad byte is caught immediately, not at the end of the transfer.
 
 **Chunk groups.** Standard bao verifies at 1 KiB granularity, which makes the outboard tree
-large (~6% of content size). Grouping chunks shrinks it dramatically while keeping the same root
-hash:
+large. Grouping chunks shrinks it while keeping the same root hash:
 
 | Group size | Outboard for 1 GiB | Smallest verifiable unit |
 |---|---|---|
 | 1 KiB (plain bao) | ~64 MiB | 1 KiB |
-| 16 KiB (iroh default) | ~4 MiB | 16 KiB |
+| **16 KiB (default)** | ~4 MiB | 16 KiB |
 | 256 KiB | ~256 KiB | 256 KiB |
 
-Group size is **a per-transfer parameter, not part of the address** — the root is identical
-either way. The serving peer advertises its group size in the handshake; the receiver verifies
-at that granularity. Permitted values: powers of two from 16 KiB to 1 MiB.
+**Defaults: 16 KiB verification groups, 64 KiB request blocks.** 16 KiB is what the rest of the
+world converged on — BitTorrent v1's request block, BitTorrent v2's leaf block size, and
+bao-tree's default — so it is where we start, not where we must stay. Both numbers are
+negotiated per transfer and must be re-judged against real measurements once M2's benchmark
+exists; very large files may want bigger groups to keep outboards small.
+
+`blake3-bao` calls grouped encoding "Iroh chunk groups" because iroh popularised the technique.
+**swarmwire does not depend on iroh, Rust, or any native module.** Keeping the whole stack pure
+JavaScript is deliberate: it has to run on Bare for mobile.
 
 ## 3. Links
 
@@ -61,33 +63,66 @@ swarmwire://<root-hex>[?s=<size>][&n=<name>][&k=<secret-hex>]
 | `root-hex` | 64 lowercase hex characters: the BLAKE3 address |
 | `s` | Size hint in bytes. Lets the receiver preallocate and show progress before any peer answers. Unverified until the content is complete. |
 | `n` | Filename hint, percent-encoded. Display only — never used as a path without sanitising. |
-| `k` | 32-byte private-swarm secret, hex. See below. |
+| `k` | 32-byte swarm key, hex. See §4. |
 
 A link with no parameters is valid and sufficient: everything else is an optimisation or a
 privacy choice.
 
+**Why hex and not z32.** The Holepunch convention (`hypercore-id-encoding`) renders *Hypercore
+keys* as z-base-32 for users — 52 characters instead of 64, with visually ambiguous characters
+removed. A swarmwire root is not a key, it is a BLAKE3 hash, and the whole world prints those as
+hex: a link should be directly comparable to `b3sum <file>` output. Parsers may later accept
+z32 on input; swarmwire only ever emits hex.
+
+Unknown query parameters are ignored, so later versions can add hints without breaking today's
+parsers.
+
 ## 4. Discovery
 
-The Hyperswarm topic is derived from the address, so holding a link is enough to find peers —
-there is no separate topic to join, and no tracker.
+Content is found through Hyperswarm topics derived by BLAKE3 with domain separation. There are
+two modes, and a peer may announce on both at once.
+
+### Content topics — "here is a link"
 
 ```
 public:   topic = BLAKE3("swarmwire/v0/discovery" || root)
-private:  topic = BLAKE3("swarmwire/v0/discovery" || root || secret)
+private:  topic = BLAKE3("swarmwire/v0/discovery" || root || swarmKey)
 ```
 
-**Public** behaves like a magnet link: every peer holding that content, anywhere, helps —
-and anyone who knows the address can discover that you have it.
+Holding the link is enough to find peers: no topic to join, no tracker.
 
-**Private** puts a random 32-byte secret in the link. Only people you sent the link to can
-derive the topic and find you. The cost is that unrelated holders of the same content cannot
-help, so a private swarm is only as resilient as the people in it.
+**Public** behaves like a magnet link: every peer holding that content, anywhere, helps — and
+anyone who knows the address can discover that you have it. **Private** mixes in a 32-byte
+swarm key, so only people holding the link can derive the topic. The cost is that unrelated
+holders of the same content cannot help, so a private swarm is only as resilient as the people
+in it.
 
-`send` defaults to **private**, because the person sharing a file usually does not intend to
-announce their holdings to anyone who can guess the hash. `--public` opts into the swarm.
+`send` defaults to **private**. Sharing a file should not announce your holdings to anyone who
+can guess the hash; `--public` opts into the wider swarm.
 
-This derivation is the one piece of hyperbeam's design worth copying: one string is both the
-rendezvous and the secret.
+### Swarm topics — "here is a group of people"
+
+```
+topic = BLAKE3("swarmwire/v0/swarm" || swarmKey)
+```
+
+A swarm key identifies a *set of peers*, not a piece of content. Members announce on one topic,
+stay connected, and then ask each other for roots over the existing connection.
+
+This exists because the per-content topic does not scale to a shared workspace: a directory of
+a thousand files must not mean a thousand DHT announces. Dropping a file into a shared workspace
+should make it reachable by that workspace's members immediately, with no per-file setup and no
+authorisation step — which is exactly what SwarmFS needs for multi-writer virtual directories.
+
+swarmwire treats a swarm key as an opaque 32 bytes. Where it comes from — a link, a workspace,
+a hypergraph context — is SwarmFS's business, not this layer's.
+
+### Passphrases
+
+A swarm key is 32 bytes. When a link cannot be pasted — read aloud, typed from another screen —
+it may be *displayed* as a word sequence from a fixed wordlist, hyperbeam-style. That is a
+display encoding of the same bytes, never a second kind of secret: words in, bytes out, same
+topic. Not in v0.
 
 ## 5. Stability rules
 
@@ -95,24 +130,21 @@ rendezvous and the secret.
 
 - The address is the plain BLAKE3 hash of the content
 - The link scheme, the hex encoding of the root, and the meaning of `s`, `n`, `k`
-- The two topic-derivation strings
+- The domain-separation strings `swarmwire/v0/discovery` and `swarmwire/v0/swarm`
 
 **Free to change at any time** (negotiated per connection, never stored in a link): chunk group
-size, block size, wire messages, scheduling, how outboard trees are cached, the sidecar format
-for partial downloads.
+size, request block size, wire messages, scheduling, how outboard trees are cached, the sidecar
+format for partial downloads.
 
 Protocol messages carry a version and a capability set in the handshake. Unknown message types
 are ignored rather than treated as errors, so new message types never break old peers.
 
 ## Open questions
 
-1. **Hex or z32 for the root in links?** Hex is 64 characters and trivially debuggable; z32 is
-   52 and is what the Holepunch ecosystem uses elsewhere. Hex is assumed above.
-2. **Should `send` default to private?** Assumed yes above. Private is safer but weaker: no
-   help from unrelated holders of the same content.
-3. **Do we want a short human-sayable code**, hyperbeam-style ("brave-lion-42"), as an
-   alternative to a link? It needs a rendezvous that maps the phrase to the address, which is a
-   different mechanism from content addressing — probably M3 or later, probably in SwarmFS.
-4. **Default chunk group size.** 16 KiB matches iroh and keeps proofs small for small files;
-   256 KiB keeps outboards tiny for very large files. A size-dependent default is possible but
-   adds a rule to remember.
+1. **Which wordlist** for passphrases — BIP39 (2048 words, widely implemented, 24 words for 32
+   bytes) or a shorter custom list. Deferred until the feature is actually built.
+2. **Should a peer announce partial content on the content topic?** Announcing while still
+   downloading helps the swarm, but tells the topic you are interested before you have anything.
+   Measure in M2.
+3. **Per-size default group size.** A single 16 KiB default is one less rule to remember; a
+   size-dependent default keeps outboards small for very large files. Decide with the benchmark.
