@@ -86,6 +86,16 @@ npm run test:swarm    # multi-peer tests over the in-memory transport
   test that actually does the bad thing.
 - No `setTimeout`-based waiting in tests. The in-memory transport is deterministic; use it.
 
+## Benchmarks
+
+`npm run bench` measures what the scheduler controls, on the deterministic harness: requests
+per group, wasted requests, proof overhead. Those numbers are reproducible, so a change that
+makes them worse shows up immediately. `npm run bench:net` measures wall-clock throughput over
+a real swarm on loopback.
+
+Neither models a link that is both slow and far away, so neither can settle queue depth. Do
+not tune the window by guesswork: build the missing benchmark first.
+
 ## Conventions
 
 - ESM, Node >= 20, no build step, no TypeScript (JSDoc types where they help).

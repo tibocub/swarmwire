@@ -15,7 +15,9 @@
     "test:fs": "brittle test/fs/*.test.js",
     "test:swarm": "brittle test/swarm/*.test.js",
     "test:net": "brittle test/net/*.test.js",
-    "test:all": "npm test && npm run test:net"
+    "test:all": "npm test && npm run test:net",
+    "bench": "node bench/swarm.js",
+    "bench:net": "node bench/throughput.js"
   },
   "dependencies": {
     "b4a": "^1.9.0",

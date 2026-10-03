@@ -77,11 +77,28 @@ ranges fail verification.
 - **Content outliving its sender**, proved in `test/swarm/partial.test.js`: the origin is
   destroyed, and a newcomer still gets the file from the peer that had downloaded it.
 
-**Still to do:** rarest-first selection, per-peer queue depth from measured throughput, and the
-benchmark that says whether any of it helped.
+- **Rarest-first selection**, so a group only one peer holds is fetched before one everybody
+  has. It is about the swarm surviving, not this download finishing: a group whose only copy
+  is on one machine disappears when that machine does.
+- **Benchmarks** (`npm run bench`, `npm run bench:net`). Current numbers on one machine:
+
+  | measure | value |
+  |---|---|
+  | wasted requests | 0 of 512, and 10 extra when a dud peer joins |
+  | proof overhead | 1.76% of content bytes at 16 KiB groups |
+  | rounds, 8 MiB | 166 with one seeder, 42 with two |
+  | throughput | ~13 MiB/s over loopback, one seeder |
+  | hashing | ~68 MiB/s, pure JavaScript BLAKE3 |
+
+**Still to do:** per-peer queue depth from measured throughput. The window is a fixed 16, and
+**neither benchmark can currently justify a number**: loopback has no latency, and the harness
+delivers every due message per round regardless of bandwidth. A window of 1 is twenty times
+worse; everything from 8 upwards is indistinguishable in both. Settling this needs a benchmark
+that models a link which is both slow and distant.
 
 **Done when:** the benchmark shows a measurable gain over M1 with several peers, and killing the
-original sender mid-transfer still completes the download.
+original sender mid-transfer still completes the download. The second half is done; the first
+is waiting on a benchmark that can measure it.
 
 ### M3 — Collections
 
