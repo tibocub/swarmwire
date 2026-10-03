@@ -1,6 +1,8 @@
 # swarmwire
 
-**Content-addressed file transfer between filesystems, over Hyperswarm.**
+**Content-addressed file transfer over Hyperswarm.**
+
+> Transfers directly from one's filesystem to another, no need to duplicate the data in a hyperblob
 
 Give someone a link, they get the bytes — from you, or from anyone else who already has them.
 Files are served in place, from wherever they already live on disk. Nothing is copied into a
@@ -64,11 +66,11 @@ Anything that needs a name, a directory or a user belongs upstairs. See
 
 ## Documentation
 
-| Document | What's in it |
-|---|---|
-| [docs/format.md](docs/format.md) | Addressing, verification, links, topic derivation — the parts that must never change casually |
-| [docs/roadmap.md](docs/roadmap.md) | Vision and milestones |
-| [AGENTS.md](AGENTS.md) | How to work in this repo |
+| Document                           | What's in it                                                                                  |
+|------------------------------------|-----------------------------------------------------------------------------------------------|
+| [docs/format.md](docs/format.md)   | Addressing, verification, links, topic derivation — the parts that must never change casually |
+| [docs/roadmap.md](docs/roadmap.md) | Vision and milestones                                                                         |
+| [AGENTS.md](AGENTS.md)             | How to work in this repo                                                                      |
 
 ## License
 
