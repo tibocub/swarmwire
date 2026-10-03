@@ -72,26 +72,38 @@ export class TestNetwork {
    */
   async settle ({ maxRounds = 10000 } = {}) {
     for (let round = 0; round < maxRounds; round++) {
-      this._discover()
-
-      if (this.queue.length === 0) {
-        await tick()
-        this._discover()
-        if (this.queue.length === 0) return
-      }
-
-      this.queue.sort(byDeliveryOrder)
-      const next = this.queue[0]
-      this.time = Math.max(this.time, next.deliverAt)
-
-      while (this.queue.length > 0 && this.queue[0].deliverAt <= this.time) {
-        this._deliver(this.queue.shift())
-      }
-
-      await tick()
+      if (!(await this.step())) return
     }
 
     throw new Error('network did not settle: a peer is probably sending in a loop')
+  }
+
+  /**
+   * Deliver one batch: everything due at the next logical instant, and nothing after it.
+   *
+   * `settle()` runs a transfer to a standstill, which makes mid-flight states impossible to
+   * catch. Stepping is how a test stops a peer *during* a transfer rather than after it.
+   *
+   * @returns {Promise<boolean>} false when there was nothing left to deliver
+   */
+  async step () {
+    this._discover()
+
+    if (this.queue.length === 0) {
+      await tick() // give anything asynchronous a chance to queue work
+      this._discover()
+      if (this.queue.length === 0) return false
+    }
+
+    this.queue.sort(byDeliveryOrder)
+    this.time = Math.max(this.time, this.queue[0].deliverAt)
+
+    while (this.queue.length > 0 && this.queue[0].deliverAt <= this.time) {
+      this._deliver(this.queue.shift())
+    }
+
+    await tick()
+    return true
   }
 
   /**

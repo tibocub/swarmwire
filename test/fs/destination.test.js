@@ -161,3 +161,25 @@ async function fixture (t, size) {
   t.teardown(() => source.close())
   return { dir, source, out: path.join(dir, 'downloaded') }
 }
+
+test('the same group arriving twice at once is counted once', async (t) => {
+  // Two peers answering the same request is normal; both copies verify. Counting both would
+  // let `have` overshoot and the download would declare itself finished with a hole in it.
+  const { source, out } = await fixture(t, 70000)
+
+  const dest = await Destination.open(out, { root: source.root, size: source.size })
+  t.teardown(() => dest.close())
+
+  const group = await source.readGroup(1)
+  const proof = source.proof(1)
+
+  const results = await Promise.all([
+    dest.put(1, group, proof),
+    dest.put(1, group, proof),
+    dest.put(1, group, proof)
+  ])
+
+  t.alike(results, [true, true, true], 'every copy is accepted')
+  t.is(dest.have, 1, 'but only one group is held')
+  t.alike(dest.missing(), [0, 2, 3, 4])
+})

@@ -1,0 +1,68 @@
+/**
+ * A peer that speaks the protocol correctly and answers dishonestly.
+ *
+ * It claims to hold whatever is asked for and replies to every request with plausible rubbish:
+ * right message, right length, wrong bytes. This is the attack the verification layer exists
+ * to stop, so it is worth testing against a real liar rather than a corrupted connection —
+ * garbled framing would be caught by the transport and prove nothing.
+ */
+
+import b4a from 'b4a'
+
+import { openChannel, VERSION } from '../../lib/wire.js'
+import { groupRange, groupCount, DEFAULT_GROUP_LOG } from '../../lib/tree.js'
+
+/**
+ * @param {object} peer - a TestNetwork peer
+ * @param {{size: number, groupLog?: number, proofLength?: number}} opts - what to claim
+ */
+export function attachLiar (peer, { size, groupLog = DEFAULT_GROUP_LOG }) {
+  const state = { requests: 0 }
+
+  peer.on('connection', (stream) => {
+    const channel = openChannel(stream, {
+      onwant: ({ root }) => {
+        channel.send.have({ root, size, groupLog })
+      },
+
+      onrequest: ({ root, index }) => {
+        state.requests++
+
+        const count = groupCount(size, groupLog)
+        if (index >= count) return
+
+        const { length } = groupRange(index, size, groupLog)
+        channel.send.data({
+          root,
+          index,
+          proof: plausibleProof(index, count),
+          data: b4a.alloc(length, 0x41) // the right shape, none of the right bytes
+        })
+      }
+    })
+
+    if (channel === null) return
+    channel.send.handshake({ version: VERSION, groupLog })
+  })
+
+  return state
+}
+
+/** A proof of the right length, made of hashes that prove nothing. */
+function plausibleProof (index, count) {
+  const proof = []
+  let start = 0
+  let end = count
+
+  while (end - start > 1) {
+    let split = 1
+    while (split * 2 < end - start) split *= 2
+    const mid = start + split
+
+    proof.push(b4a.alloc(32, proof.length + 1))
+    if (index < mid) end = mid
+    else start = mid
+  }
+
+  return proof
+}

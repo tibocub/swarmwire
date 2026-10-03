@@ -64,7 +64,8 @@ npm run test:swarm    # multi-peer tests over the in-memory transport
 
   Peers join topics and meet whoever shares one, exactly like Hyperswarm, but **nothing is
   delivered until `await net.settle()`** — so a test decides when each frame lands. Faults
-  available: `link.setLatency()`, `link.setDropRate()` (seeded, reproducible),
+  available: `net.step()` delivers one batch at a time, for acting mid-transfer;
+  `link.setLatency()`, `link.setDropRate()` (seeded, reproducible),
   `link.partition()`, `peer.corruptOutgoing()` (a liar, or `null` to swallow), and
   `peer.destroy()` (a peer that loses power). `net.pump()` lets writes reach the queue without
   delivering them, for assertions on `net.inflight`.
