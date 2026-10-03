@@ -8,7 +8,7 @@
  */
 
 import b4a from 'b4a'
-import * as bao from 'blake3-bao/bao'
+import { bao } from '../../lib/blake3.js'
 
 import { openChannel, VERSION } from '../../lib/wire.js'
 import { groupRange, groupCount, DEFAULT_GROUP_LOG } from '../../lib/tree.js'

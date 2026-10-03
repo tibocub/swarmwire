@@ -7,6 +7,7 @@
  * getting takes that link and nothing else.
  */
 
+import process from 'process'
 import Hyperswarm from 'hyperswarm'
 import DHT from 'hyperdht'
 import crypto from 'hypercore-crypto'
@@ -27,7 +28,7 @@ Options:
 `
 
 main().catch((err) => {
-  process.stderr.write(String(err.message ?? err) + '\n')
+  warn(String(err.message ?? err))
   process.exit(1)
 })
 
@@ -143,10 +144,12 @@ function bytes (n) {
   return `${(n / 1024 ** 3).toFixed(2)} GiB`
 }
 
+// console, not process.stdout.write: on Bare the latter never reaches a piped stdout, so a
+// CLI written that way is invisible to anything that runs it as a subprocess.
 function print (line) {
-  process.stdout.write(line + '\n')
+  console.log(line)
 }
 
 function warn (line) {
-  process.stderr.write(line + '\n')
+  console.error(line)
 }

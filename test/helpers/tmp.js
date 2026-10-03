@@ -3,6 +3,7 @@
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
+import process from 'process'
 import b4a from 'b4a'
 
 let counter = 0

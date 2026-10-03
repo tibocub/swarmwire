@@ -1,5 +1,5 @@
 import test from 'brittle'
-import blake3 from 'blake3-bao/blake3'
+import { blake3 } from '../../lib/blake3.js'
 import b4a from 'b4a'
 import fs from 'fs'
 

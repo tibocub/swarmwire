@@ -48,6 +48,11 @@ A library (with a thin CLI) that moves bytes between peers:
 - **Not a live-stream transport.** Addresses name fixed content. Open-ended streams need an
   append-only log; that is what hypercore is for.
 
+## Runtimes
+
+Node and Bare, with the same test suite passing on both — Bare because that is what mobile
+builds run on. See [AGENTS.md](AGENTS.md) for what that costs in practice.
+
 ## Layering
 
 ```

@@ -9,18 +9,52 @@
   "bin": {
     "swarmwire": "bin/swarmwire.js"
   },
+  "imports": {
+    "fs": {
+      "bare": "bare-fs",
+      "default": "fs"
+    },
+    "events": {
+      "bare": "bare-events",
+      "default": "events"
+    },
+    "process": {
+      "bare": "bare-process",
+      "default": "process"
+    },
+    "path": {
+      "bare": "bare-path",
+      "default": "path"
+    },
+    "os": {
+      "bare": "bare-os",
+      "default": "os"
+    },
+    "url": {
+      "bare": "bare-url",
+      "default": "url"
+    },
+    "child_process": {
+      "bare": "bare-subprocess",
+      "default": "child_process"
+    }
+  },
   "scripts": {
     "test": "npm run test:unit && npm run test:fs && npm run test:swarm",
     "test:unit": "brittle test/unit/*.test.js",
     "test:fs": "brittle test/fs/*.test.js",
     "test:swarm": "brittle test/swarm/*.test.js",
     "test:net": "brittle test/net/*.test.js",
-    "test:all": "npm test && npm run test:net",
+    "test:all": "npm test && npm run test:net && npm run test:bare && npm run test:bare:net",
+    "test:bare": "bare node_modules/brittle/bin/bare.js test/unit/*.test.js test/fs/*.test.js test/swarm/*.test.js",
+    "test:bare:net": "bare node_modules/brittle/bin/bare.js test/net/*.test.js",
     "bench": "node bench/swarm.js",
     "bench:net": "node bench/throughput.js"
   },
   "dependencies": {
     "b4a": "^1.9.0",
+    "bare-events": "^2.9.0",
+    "bare-fs": "^4.8.2",
     "blake3-bao": "^1.3.4",
     "compact-encoding": "^3.5.2",
     "hyperswarm": "^4.17.2",
@@ -29,9 +63,16 @@
   },
   "devDependencies": {
     "@hyperswarm/testnet": "^3.1.4",
+    "bare": "^1.34.1",
+    "bare-os": "^3.6.1",
+    "bare-path": "^3.0.0",
+    "bare-process": "^4.2.4",
+    "bare-subprocess": "^5.0.0",
+    "bare-url": "^2.1.7",
     "brittle": "^3.7.0"
   },
   "engines": {
+    "bare": ">=1.16",
     "node": ">=20"
   }
 }

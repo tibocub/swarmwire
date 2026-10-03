@@ -1,6 +1,5 @@
 import test from 'brittle'
-import blake3 from 'blake3-bao/blake3'
-import * as bao from 'blake3-bao/bao'
+import { blake3, bao } from '../../lib/blake3.js'
 import b4a from 'b4a'
 
 import { rootOf, formatLink, parseLink, discoveryTopic, swarmTopic } from '../../lib/address.js'

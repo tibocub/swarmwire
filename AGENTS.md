@@ -21,14 +21,33 @@ Allowed dependencies: `hyperswarm`, `protomux`, `compact-encoding`, `b4a`, `blak
 
 ## Runtime targets: Node **and** Bare
 
-Mobile apps are the reason. Everything here must run on Bare as well as Node:
+Mobile apps are the reason, and both runtimes run the same 101 tests:
+
+```bash
+npm test              # Node
+npm run test:bare     # Bare, same suite
+npm run test:all      # both, including the real-swarm tests
+```
+
+Rules:
 
 - **No `Buffer`.** Use `b4a` for every byte operation.
-- **No `node:` builtins imported directly.** Filesystem access goes behind a small adapter so
-  Bare can supply `bare-fs`; same for anything else platform-shaped.
-- **No native modules, no WASM-only paths.** `blake3-bao`'s ESM builds are pure JavaScript and
-  use no `Buffer` — that was checked, and it is why they were chosen over a Rust binding.
-- Do not add a dependency without checking it the same way.
+- **No globals that Bare does not have.** `process` is the one that bites: import it
+  (`import process from 'process'`), never assume it. `setImmediate`, `queueMicrotask` and
+  `Buffer` do exist on Bare; `process` does not.
+- **No `node:` builtins imported directly.** Import the bare specifier (`fs`, `events`,
+  `path`) and let the `imports` map in `package.json` send Bare to `bare-fs`, `bare-events`,
+  `bare-path`. Adding a builtin means adding a mapping and a `bare-*` dependency.
+- **Nothing that imports `module`.** This is how a dependency usually breaks Bare:
+  `blake3-bao`'s ESM entry points are wrappers that call `createRequire` from Node's `module`,
+  which Bare has no equivalent for. The CommonJS files underneath load identically on both,
+  so `lib/blake3.cjs` reaches them and `lib/blake3.js` re-exports; everything else imports
+  from there. Check a new dependency for this before adding it.
+- **In the CLI, print with `console.log`, not `process.stdout.write`.** On Bare the latter
+  never reaches a piped stdout, so a CLI written that way works in a terminal and is silent
+  to anything that spawns it. The CLI tests spawn `process.execPath`, so they catch it.
+- **No native modules of our own.** Native addons the Holepunch stack already ships
+  (sodium-native, udx-native) are fine: the real-swarm tests pass under Bare, addons included.
 
 ## Invariants
 

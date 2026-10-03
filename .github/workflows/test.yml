@@ -21,6 +21,22 @@ jobs:
       - run: npm ci
       - run: npm test
 
+  # The same suite on Bare, the runtime mobile builds use. A dependency that quietly needs a
+  # node builtin only shows up here.
+  bare:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run test:bare
+
   # Real Hyperswarm against a private local DHT. Slower and more environment-dependent than
   # the rest, so it runs on its own rather than across the matrix.
   net:
@@ -32,3 +48,4 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: npm run test:net
+      - run: npm run test:bare:net

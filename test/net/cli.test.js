@@ -9,6 +9,7 @@ import test from 'brittle'
 import createTestnet from '@hyperswarm/testnet'
 import { spawn } from 'child_process'
 import path from 'path'
+import process from 'process'
 import { fileURLToPath } from 'url'
 
 import { tmpdir, writeSample, read } from '../helpers/tmp.js'
@@ -58,6 +59,8 @@ test('get refuses a link it cannot parse', async (t) => {
 })
 
 function run (t, args) {
+  // process.execPath is whichever runtime is running the tests, so the CLI is exercised
+  // under Node and under Bare without the test caring which.
   const child = spawn(process.execPath, [CLI, ...args], { stdio: ['ignore', 'pipe', 'pipe'] })
 
   let stdout = ''
