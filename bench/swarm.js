@@ -44,50 +44,95 @@ report(rows)
 await windowSweep()
 
 /**
- * How deep the request queue needs to be, measured where it matters: with latency.
+ * How deep the request queue needs to be.
  *
- * On loopback a window of 4 performs the same as 128, which proves nothing — a request and
- * its answer cost nothing to interleave when the round trip is free. Here the link is given a
- * delivery delay, so a shallow queue spends its time waiting, exactly as it would on a real
- * connection between two cities.
+ * Neither loopback nor an infinitely fast harness can answer this: when a round trip is free,
+ * or when the wire carries everything at once, one outstanding request performs as well as a
+ * hundred. So the link here is given both a delay and a byte rate, and the measure is logical
+ * time rather than rounds. A window below the bandwidth-delay product leaves the wire idle
+ * while it waits; above it, nothing improves.
+ *
+ * At 16 KiB groups, latency L and rate B bytes/tick, keeping the wire busy needs roughly
+ * (2L * B) / 16384 requests outstanding — the table should bend at about that point.
  */
 async function windowSweep () {
-  const size = 2 * 1024 * 1024
-  const latency = 20
+  const size = 4 * 1024 * 1024
+  const cases = [
+    { latency: 20, bandwidth: 8192, label: 'near and slow' },
+    { latency: 200, bandwidth: 8192, label: 'far and slow' },
+    { latency: 200, bandwidth: 65536, label: 'far and fast' }
+  ]
 
-  console.log(`window depth against a link with ${latency} ticks of latency, ${size / 1024 / 1024} MiB:`)
-  console.log()
-  console.log('window   rounds')
-  console.log('------   ------')
+  for (const { latency, bandwidth, label } of cases) {
+    const ideal = Math.ceil((2 * latency * bandwidth) / (16 * 1024))
 
-  for (const window of [1, 2, 4, 8, 16, 32, 64]) {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'swarmwire-bench-'))
-    const file = path.join(dir, 'content')
-    fs.writeFileSync(file, sample(size))
+    console.log(`${label}: ${latency} ticks of latency, ${bandwidth} bytes/tick, ${size / 1024 / 1024} MiB`)
+    console.log(`(bandwidth-delay product is about ${ideal} groups in flight)`)
+    console.log()
+    console.log('window   ticks      vs best')
+    console.log('------   --------   -------')
 
-    const net = new TestNetwork()
-    const seeder = new Swarmwire({ swarm: net.peer('seeder'), window })
-    const leecher = new Swarmwire({ swarm: net.peer('leecher'), window })
-    net.link('seeder', 'leecher').setLatency(latency)
+    const results = []
 
-    const { link } = await seeder.serve(file)
-    const download = leecher.download(link, path.join(dir, 'copy'))
-
-    let rounds = 0
-    while (!download.complete && rounds < 100000) {
-      await net.settle()
-      rounds++
+    for (const window of [1, 4, 16, 64, 256]) {
+      results.push({
+        label: String(window),
+        ticks: await measure({ size, latency, bandwidth, window, adaptive: false })
+      })
     }
-    await download
 
-    console.log(String(window).padEnd(9) + String(rounds))
+    // The real one: starts small and grows while the window, rather than the link, is what
+    // it is waiting on.
+    results.push({
+      label: 'adaptive',
+      ticks: await measure({ size, latency, bandwidth, window: 32, adaptive: true })
+    })
 
-    await leecher.destroy()
-    await seeder.destroy()
-    fs.rmSync(dir, { recursive: true, force: true })
+    const best = Math.min(...results.map((r) => r.ticks))
+
+    for (const { label, ticks } of results) {
+      const ratio = (ticks / best).toFixed(2) + 'x'
+      console.log(label.padEnd(9) + String(ticks).padEnd(11) + ratio)
+    }
+
+    console.log()
+  }
+}
+
+async function measure ({ size, latency, bandwidth, window, adaptive = true }) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'swarmwire-bench-'))
+  const file = path.join(dir, 'content')
+  fs.writeFileSync(file, sample(size))
+
+  const net = new TestNetwork()
+  const seeder = new Swarmwire({ swarm: net.peer('seeder'), window })
+  const leecher = new Swarmwire({ swarm: net.peer('leecher'), window })
+
+  net.link('seeder', 'leecher').setLatency(latency).setBandwidth(bandwidth)
+
+  const { link } = await seeder.serve(file)
+  const download = leecher.download(link, path.join(dir, 'copy'))
+
+  // Pinning the window is only for the comparison: it is what the code did before.
+  if (!adaptive) {
+    download._widen = () => {}
+    download._narrow = () => {}
   }
 
-  console.log()
+  let rounds = 0
+  while (!download.complete && rounds < 200000) {
+    await net.settle()
+    rounds++
+  }
+  await download
+
+  const ticks = net.time
+
+  await leecher.destroy()
+  await seeder.destroy()
+  fs.rmSync(dir, { recursive: true, force: true })
+
+  return ticks
 }
 
 async function run ({ name, size, seeders, silent = 0 }) {

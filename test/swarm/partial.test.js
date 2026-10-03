@@ -124,7 +124,9 @@ test('a peer announces new groups as it gets them', async (t) => {
 // ---------------------------------------------------------------------------
 
 function node (t, net, name) {
-  const sw = new Swarmwire({ swarm: net.peer(name) })
+  // Deliberately shallow: these tests stop a transfer half way, which needs a half way.
+  const sw = new Swarmwire({ swarm: net.peer(name), window: 2 })
+
   t.teardown(() => sw.destroy())
   return sw
 }

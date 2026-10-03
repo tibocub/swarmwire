@@ -114,7 +114,10 @@ function node (t, net, clock, name) {
   const sw = new Swarmwire({
     swarm: net.peer(name),
     timers: clock,
-    requestTimeout: TIMEOUT
+    requestTimeout: TIMEOUT,
+    // Shallow on purpose: with the default window one peer claims every group of a small
+    // file, and a test about what happens when a peer goes quiet needs it to be asked.
+    window: 2
   })
 
   t.teardown(() => sw.destroy())

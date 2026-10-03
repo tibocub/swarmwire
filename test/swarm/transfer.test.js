@@ -227,7 +227,11 @@ test('a download resumes from what is already on disk', async (t) => {
 
 function node (t, net, name) {
   const peer = net.peer(name)
-  const sw = new Swarmwire({ swarm: peer })
+
+  // A small window keeps transfers gradual, so tests that act in the middle of one have a
+  // middle to act in. The window adapts upwards in real use; here that would race.
+  const sw = new Swarmwire({ swarm: peer, window: 2 })
+
   t.teardown(() => sw.destroy())
   return sw
 }

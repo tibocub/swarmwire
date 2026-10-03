@@ -90,15 +90,33 @@ ranges fail verification.
   | throughput | ~13 MiB/s over loopback, one seeder |
   | hashing | ~68 MiB/s, pure JavaScript BLAKE3 |
 
-**Still to do:** per-peer queue depth from measured throughput. The window is a fixed 16, and
-**neither benchmark can currently justify a number**: loopback has no latency, and the harness
-delivers every due message per round regardless of bandwidth. A window of 1 is twenty times
-worse; everything from 8 upwards is indistinguishable in both. Settling this needs a benchmark
-that models a link which is both slow and distant.
+- **An adaptive request window.** The harness now models bandwidth as well as latency, which
+  is what made this measurable: a link carries a frame while it transmits it, so a shallow
+  window leaves the wire idle during the round trip. Keeping a link busy needs roughly
+  `(2 x latency x bandwidth) / group size` requests outstanding — about 20 groups for a
+  nearby link and 1600 for a fast distant one, so no fixed number can be right.
 
-**Done when:** the benchmark shows a measurable gain over M1 with several peers, and killing the
-original sender mid-transfer still completes the download. The second half is done; the first
-is waiting on a benchmark that can measure it.
+  The window now starts at 32 per peer, grows by one each time an answer arrives while the
+  window (rather than the link) was the constraint, and halves on a refusal or timeout:
+  additive increase, multiplicative decrease, for the same reason congestion control uses it.
+
+  Measured on a distant link, against the best fixed window chosen with hindsight:
+
+  | window | far and slow | far and fast |
+  |---|---|---|
+  | 16 (the old fixed value) | 4.9x worse | 7.4x worse |
+  | adaptive | 1.9x worse | 2.1x worse |
+  | adaptive, on a transfer bigger than the pipe | 1.25x worse | — |
+
+  The remaining gap is the ramp: a window that starts small spends a few round trips getting
+  big, and on a 4 MiB transfer against a pipe that holds 25 MiB there is nothing to ramp
+  into. Closing it properly means estimating bandwidth and round-trip time and jumping
+  straight to the answer, which **the harness cannot currently validate**: its logical time
+  and the injected clock are separate, so a timing-based estimate would measure nothing real.
+  That is the next piece of work here, and it needs the harness changed first.
+
+**Done:** the benchmark shows large gains with several peers, and killing the original sender
+mid-transfer still completes the download from a peer that only has part of it.
 
 ### M3 — Collections ✅
 

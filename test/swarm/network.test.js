@@ -247,3 +247,42 @@ function send (peer, to, message) {
   const stream = peer.connections.find((s) => s.remoteName === to)
   stream.write(b4a.from(message))
 }
+
+test('a slow link takes longer to carry more bytes', async (t) => {
+  const net = new TestNetwork()
+  const alice = net.peer('alice').join(TOPIC)
+  const bob = net.peer('bob').join(TOPIC)
+
+  net.link(alice, bob).setBandwidth(100) // bytes per tick
+
+  const heard = collect(bob)
+  await net.settle()
+
+  send(alice, 'bob', 'x'.repeat(1000))
+  await net.settle()
+
+  t.is(heard().length, 1)
+  t.ok(net.time >= 10, `took ${net.time} ticks to push 1000 bytes at 100/tick`)
+})
+
+test('frames queue behind each other on a busy link', async (t) => {
+  const net = new TestNetwork()
+  const alice = net.peer('alice').join(TOPIC)
+  const bob = net.peer('bob').join(TOPIC)
+
+  net.link(alice, bob).setBandwidth(100)
+
+  const heard = collect(bob)
+  await net.settle()
+
+  // Three frames sent at once cannot all arrive at once: the wire carries one at a time.
+  for (let i = 0; i < 3; i++) send(alice, 'bob', String(i).repeat(500))
+  await net.pump()
+
+  const arrivals = net.queue.map((frame) => frame.deliverAt).sort((a, b) => a - b)
+  t.is(arrivals.length, 3)
+  t.ok(arrivals[0] < arrivals[1] && arrivals[1] < arrivals[2], `arrivals at ${arrivals.join(', ')}`)
+
+  await net.settle()
+  t.is(heard().length, 3, 'and all of them do arrive')
+})

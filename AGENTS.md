@@ -112,8 +112,18 @@ per group, wasted requests, proof overhead. Those numbers are reproducible, so a
 makes them worse shows up immediately. `npm run bench:net` measures wall-clock throughput over
 a real swarm on loopback.
 
-Neither models a link that is both slow and far away, so neither can settle queue depth. Do
-not tune the window by guesswork: build the missing benchmark first.
+The harness models latency *and* bandwidth, which is what makes request pipelining
+measurable: a link carries a frame while it transmits it, so a shallow window leaves the wire
+idle during the round trip. `windowSweep` in `bench/swarm.js` is where the request window was
+settled; change that code and run it rather than reasoning about a number.
+
+Its one blind spot: the harness's logical time and the injected clock are separate, so
+anything that estimates bandwidth or round-trip time from timestamps cannot be validated
+there yet.
+
+**Tests that act in the middle of a transfer need a shallow window** (`new Swarmwire({ swarm,
+window: 2 })`), or the default window of 32 swallows a small file in one step and there is no
+middle to act in.
 
 ## Conventions
 

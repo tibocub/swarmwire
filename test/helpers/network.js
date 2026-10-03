@@ -143,7 +143,7 @@ export class TestNetwork {
       from,
       to,
       data: payload,
-      deliverAt: this.time + link.latency,
+      deliverAt: link._schedule(from.name, to.name, payload.length, this.time),
       seq: this._seq++
     })
   }
@@ -264,13 +264,30 @@ class TestStream extends Duplex {
 class Link {
   constructor () {
     this.latency = 0
+    this.bandwidth = Infinity
     this.dropRate = 0
     this.partitioned = false
+
+    this._free = new Map() // direction -> the tick this link stops being busy
   }
 
   /** Logical delivery delay. Higher means this peer's frames arrive after everyone else's. */
   setLatency (ticks) {
     this.latency = ticks
+    return this
+  }
+
+  /**
+   * Bytes per tick, in each direction.
+   *
+   * Without this a link is infinitely fast and only latency matters, which makes request
+   * pipelining look pointless: every answer arrives in the same tick however many were asked
+   * for. With it, a frame occupies the link while it is transmitted and the next one waits,
+   * so a shallow request window leaves the link idle during the round trip — exactly the
+   * thing a deeper queue is for.
+   */
+  setBandwidth (bytesPerTick) {
+    this.bandwidth = bytesPerTick
     return this
   }
 
@@ -289,6 +306,22 @@ class Link {
   heal () {
     this.partitioned = false
     return this
+  }
+
+  /**
+   * When a frame of this size, sent now, finishes arriving: it queues behind whatever is
+   * still on the wire in that direction, takes time to transmit, and then flies.
+   */
+  _schedule (from, to, bytes, now) {
+    if (this.bandwidth === Infinity) return now + this.latency
+
+    const direction = from + ' ' + to
+    const starts = Math.max(now, this._free.get(direction) ?? 0)
+    const finishes = starts + Math.ceil(bytes / this.bandwidth)
+
+    this._free.set(direction, finishes)
+
+    return finishes + this.latency
   }
 }
 
