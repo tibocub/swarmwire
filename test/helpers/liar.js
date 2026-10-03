@@ -48,6 +48,31 @@ export function attachLiar (peer, { size, groupLog = DEFAULT_GROUP_LOG }) {
   return state
 }
 
+/**
+ * A peer that claims to have the content and then never answers a request.
+ *
+ * Worse than a refusal: each request it accepts is a group nobody else is fetching. This is
+ * what request timeouts exist for.
+ *
+ * @param {object} peer - a TestNetwork peer
+ * @param {{size: number, groupLog?: number}} opts - what to claim
+ */
+export function attachSilent (peer, { size, groupLog = DEFAULT_GROUP_LOG }) {
+  const state = { requests: 0 }
+
+  peer.on('connection', (stream) => {
+    const channel = openChannel(stream, {
+      onwant: ({ root }) => channel.send.have({ root, size, groupLog }),
+      onrequest: () => { state.requests++ } // ...and nothing else, ever
+    })
+
+    if (channel === null) return
+    channel.send.handshake({ version: VERSION, groupLog })
+  })
+
+  return state
+}
+
 /** A proof of the right length, made of hashes that prove nothing. */
 function plausibleProof (index, count) {
   const proof = []
