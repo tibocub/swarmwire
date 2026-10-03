@@ -24,7 +24,7 @@ test('a silent peer cannot stall a download that has another source', async (t) 
   const silent = addSilent(net, link, 300000)
 
   const download = leecher.download(link, path.join(dir, 'copy'))
-  await run(net, clock, () => download.complete)
+  await run(net, clock, download)
 
   t.ok(download.complete, 'finished from the honest peer')
   t.ok(silent.requests > 0, `the silent peer was asked ${silent.requests} times`)
@@ -101,6 +101,10 @@ test('no timer is left waiting once a download ends', async (t) => {
   const download = leecher.download(link, path.join(dir, 'copy'))
   await until(net, () => download.complete)
 
+  // Await the download itself, not just the last group: `complete` flips when the final group
+  // lands on disk, while the tidying up happens as the download settles.
+  await download
+
   t.is(clock.waiting, 0)
 })
 
@@ -157,12 +161,22 @@ async function until (net, done, { rounds = 500 } = {}) {
   throw new Error('condition never held')
 }
 
-/** Deliver everything, then let due timers fire, until the condition holds. */
-async function run (net, clock, done, { rounds = 2000 } = {}) {
+/**
+ * Run a download to completion, moving the clock only when a round delivered nothing new.
+ * Advancing it every round would time out honest peers whose answer is still in flight,
+ * which would be a fact about the test rather than about the code.
+ */
+async function run (net, clock, download, { rounds = 2000 } = {}) {
+  let last = -1
+
   for (let i = 0; i < rounds; i++) {
-    if (done()) return
+    if (download.complete) return
+
     await net.settle()
-    if (!done()) clock.advance(TIMEOUT + 1)
+
+    if (download.have === last) clock.advance(TIMEOUT + 1)
+    last = download.have
   }
-  if (!done()) throw new Error('never finished')
+
+  throw new Error(`never finished: ${download.have}/${download.total}`)
 }

@@ -57,11 +57,28 @@ on a private DHT, CLI processes included.
 - Scheduling is first-missing-first, not rarest-first, with a fixed window of 8.
 - Hashing is cached in memory only, so a restarted process rehashes what it serves.
 
-### M2 — Swarm
+### M2 — Swarm *(in progress)*
 
 Partial seeders (you serve what you have, mid-download), pipelined block requests with a
 per-peer queue sized from measured throughput, rarest-first selection, and dropping peers whose
 ranges fail verification.
+
+**Done so far:**
+
+- **Request timeouts.** A peer that goes quiet loses the group after a timeout and stops being
+  asked after three; answering earns its place back. Time is injected, so the tests wind a
+  clock rather than sleeping.
+- **Refusals.** A peer that cannot serve a group says so, instead of leaving it reserved until
+  a timeout. This alone was the difference between a stalled relay and a working one.
+- **Partial seeding.** A download in progress serves what it holds, and a finished one keeps
+  serving without re-reading the file. Verifying a group now also keeps the proof that came
+  with it, which is what makes the group provable to the next peer — without that, a peer
+  holding the first third of a file can prove none of it.
+- **Content outliving its sender**, proved in `test/swarm/partial.test.js`: the origin is
+  destroyed, and a newcomer still gets the file from the peer that had downloaded it.
+
+**Still to do:** rarest-first selection, per-peer queue depth from measured throughput, and the
+benchmark that says whether any of it helped.
 
 **Done when:** the benchmark shows a measurable gain over M1 with several peers, and killing the
 original sender mid-transfer still completes the download.

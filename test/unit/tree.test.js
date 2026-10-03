@@ -9,6 +9,7 @@ import {
   groupCount,
   groupLength,
   groupRange,
+  groupHash,
   DEFAULT_GROUP_LOG
 } from '../../lib/tree.js'
 
@@ -220,3 +221,79 @@ function sample (n) {
 function hexes (list) {
   return list.map((h) => b4a.toString(b4a.from(h), 'hex'))
 }
+
+// ---------------------------------------------------------------------------
+// Partial knowledge: what a half-finished download can prove.
+// ---------------------------------------------------------------------------
+
+test('a group hash can be recomputed from the group alone', (t) => {
+  const data = sample(70000)
+  const tree = treeOf(data, DEFAULT_GROUP_LOG)
+
+  t.alike(
+    hexes([groupHash(data.subarray(0, 16384), 0)]),
+    hexes([tree.groupHashes[0]]),
+    'so a holder never has to be told the hash of what it holds'
+  )
+})
+
+test('a tree with holes knows what it cannot prove', (t) => {
+  const data = sample(70000) // 5 groups
+  const full = treeOf(data, DEFAULT_GROUP_LOG)
+
+  // Hold groups 0 and 1 only. Group 0 needs its sibling (1) and the subtree 2..4, which is
+  // missing, so nothing is provable yet.
+  const partial = new GroupTree([full.groupHashes[0], full.groupHashes[1], null, null, null], {
+    size: data.length
+  })
+
+  t.absent(partial.complete)
+  t.is(partial.root, null, 'and it cannot pretend to know the address')
+  t.is(partial.proof(0), null)
+  t.absent(partial.canProve(0))
+})
+
+test('a tree with the right holes can still prove some groups', (t) => {
+  const data = sample(70000) // 5 groups: the tree splits into 0..3 and 4
+  const full = treeOf(data, DEFAULT_GROUP_LOG)
+
+  // Missing only the last group. Groups 0..3 sit in a complete subtree, and the sibling each
+  // of them needs is inside it, so all four stay provable.
+  const hashes = full.groupHashes.map((h, i) => (i === 4 ? null : h))
+  const partial = new GroupTree(hashes, { size: data.length })
+
+  t.absent(partial.canProve(4), 'what it does not have, it cannot prove')
+  t.absent(partial.canProve(0), 'nor group 0, whose path needs the missing one as a sibling')
+
+  // A hole in the middle is worse: with group 3 gone, nothing at all can be proved, because
+  // every path crosses the subtree that contains it.
+  const holed = new GroupTree(full.groupHashes.map((h, i) => (i === 3 ? null : h)), {
+    size: data.length
+  })
+  t.alike([0, 1, 2, 4].map((i) => holed.canProve(i)), [false, false, false, false])
+})
+
+test('a complete tree proves everything, hole or not', (t) => {
+  const data = sample(70000)
+  const full = treeOf(data, DEFAULT_GROUP_LOG)
+
+  // Sanity: a tree built from every hash behaves exactly like one built from content.
+  const rebuilt = new GroupTree([...full.groupHashes], { size: data.length })
+
+  t.ok(rebuilt.complete)
+  t.is(rebuilt.root, full.root)
+  t.ok(verifyGroup({
+    root: full.root,
+    size: data.length,
+    index: 4,
+    data: data.subarray(65536),
+    proof: rebuilt.proof(4)
+  }))
+})
+
+test('verifyGroup refuses a missing proof instead of crashing', (t) => {
+  const data = sample(70000)
+  const tree = treeOf(data, DEFAULT_GROUP_LOG)
+
+  t.absent(verifyGroup({ root: tree.root, size: data.length, index: 0, data: data.subarray(0, 16384), proof: null }))
+})

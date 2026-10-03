@@ -210,7 +210,11 @@ test('a download resumes from what is already on disk', async (t) => {
 
   const second = leecher.download(link, out)
   await second.ready()
-  t.is(second.have, got, 'it picked up where it stopped')
+
+  // At least what it had: stopping drains writes that were already in flight rather than
+  // discarding a group that verified, so the resumed download may hold one or two more.
+  t.ok(second.have >= got, `picked up ${second.have} groups, having stopped with ${got}`)
+  t.ok(second.have < second.total, 'and it is genuinely a resume, not a finished download')
 
   await settleUntil(net, () => second.complete, { rounds: 400 })
   await second

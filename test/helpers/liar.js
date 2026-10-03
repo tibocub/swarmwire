@@ -8,6 +8,7 @@
  */
 
 import b4a from 'b4a'
+import * as bao from 'blake3-bao/bao'
 
 import { openChannel, VERSION } from '../../lib/wire.js'
 import { groupRange, groupCount, DEFAULT_GROUP_LOG } from '../../lib/tree.js'
@@ -22,7 +23,7 @@ export function attachLiar (peer, { size, groupLog = DEFAULT_GROUP_LOG }) {
   peer.on('connection', (stream) => {
     const channel = openChannel(stream, {
       onwant: ({ root }) => {
-        channel.send.have({ root, size, groupLog })
+        channel.send.have({ root, size, groupLog, bitfield: everything(size, groupLog) })
       },
 
       onrequest: ({ root, index }) => {
@@ -62,7 +63,9 @@ export function attachSilent (peer, { size, groupLog = DEFAULT_GROUP_LOG }) {
 
   peer.on('connection', (stream) => {
     const channel = openChannel(stream, {
-      onwant: ({ root }) => channel.send.have({ root, size, groupLog }),
+      onwant: ({ root }) => {
+        channel.send.have({ root, size, groupLog, bitfield: everything(size, groupLog) })
+      },
       onrequest: () => { state.requests++ } // ...and nothing else, ever
     })
 
@@ -71,6 +74,15 @@ export function attachSilent (peer, { size, groupLog = DEFAULT_GROUP_LOG }) {
   })
 
   return state
+}
+
+/** Claims to hold every group. */
+function everything (size, groupLog) {
+  const count = groupCount(size, groupLog)
+  const bitfield = bao.createBitfield(count)
+
+  for (let i = 0; i < count; i++) bao.setBit(bitfield, i)
+  return bitfield
 }
 
 /** A proof of the right length, made of hashes that prove nothing. */
