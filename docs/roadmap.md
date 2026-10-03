@@ -137,6 +137,30 @@ packed on Windows has the same address as the same folder packed on Linux.
 
 SwarmFS rebuilt as the layer above: directories in hypergraph, bytes through swarmwire.
 
+**What hypergraph actually provides today** (checked 2026-10-03 against the repo, not
+assumed):
+
+- **External content references** — `graph.putContentRef()` stores an entity whose content is
+  an *address* held elsewhere: `{src: [...], size, type, mutable, digest: "blake3:…"}`, specced
+  in its `specs/001-external-content-refs/`. It validates the envelope and deliberately never
+  interprets a scheme, "which is what lets new backends arrive without a change". This is
+  precisely the split swarmwire was built for, and the digest format is already ours.
+- **Multi-writer contexts** (`createContext`, Autobase underneath) — what a shared directory
+  needs.
+- **Roles, permissions and moderation** (`createRoleBase`, `setRole`, `can`, `moderateAction`).
+- **Identity** with multi-device support and mnemonic recovery.
+- **Networking** (`connectToSwarm`, `handlePeerConnection`, bootstrap export).
+
+So the features SwarmFS was paused for exist. Known rough edges to design around: replication
+is manual (`update()` has to be called; nothing polls), the bootstrap/export API is split in
+two, and there is no way to prune a single context.
+
+**One decision before building:** hypergraph's examples write `swarmfs://…` in `src`. A
+swarmwire root is not a filesystem path, so the address that belongs in a content reference is
+`swarmwire://<root>`; `swarmfs://` should mean a *name* in the virtual filesystem, which is
+mutable and resolves to different content over time. Worth settling before links are stored in
+anyone's graph.
+
 ## Non-goals
 
 - BitTorrent network compatibility
