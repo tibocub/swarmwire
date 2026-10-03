@@ -69,8 +69,15 @@ npm run test:swarm    # multi-peer tests over the in-memory transport
   `link.partition()`, `peer.corruptOutgoing()` (a liar, or `null` to swallow), and
   `peer.destroy()` (a peer that loses power). `net.pump()` lets writes reach the queue without
   delivering them, for assertions on `net.inflight`.
-- `test/net/` — a small number of real-Hyperswarm smoke tests. Slow and flaky by nature; never
-  the place to test logic.
+- `test/net/` — real Hyperswarm against a private local DHT (`@hyperswarm/testnet`), including
+  the CLI driven as two processes. Slow and environment-dependent; never the place to test
+  logic. Run with `npm run test:net`; `npm test` leaves it out, `npm run test:all` includes it.
+
+  Two things that cost an afternoon, if a testnet peer cannot be found: testnet nodes are
+  **firewalled by default**, so create them with `testnet.createNode({ ephemeral: false,
+  firewalled: false })`, and a node talking to a loopback bootstrap must also **bind to
+  127.0.0.1**, or it announces an address its peers cannot reach. Also wait for
+  `discovery.flushed()` on the announcing side before the other side looks up.
 
 **Rules:**
 

@@ -7,14 +7,19 @@ Files are served in place, from wherever they already live on disk. Nothing is c
 store, a core, or a cache first.
 
 ```
-swarmwire send ./holidays.mp4
-  swarmwire://10db6398a68dff502d002912f54502fdde9ab55fb30bec32861a2f004d874fc8
+$ swarmwire send ./holidays.mp4
+swarmwire://10db6398a68dff502d002912f54502fdde9ab55fb30bec32861a2f004d874fc8?s=734003200&n=holidays.mp4&k=…
+serving ./holidays.mp4 (700.0 MiB)
+keep this running; ctrl-c to stop
 
-swarmwire get swarmwire://10db63…74fc8 ./holidays.mp4
+$ swarmwire get 'swarmwire://10db63…74fc8?s=734003200&n=holidays.mp4&k=…'
+fetching 10db6398a68dff50... into holidays.mp4
+44800/44800 groups (100%)
 ```
 
-> Status: **pre-alpha, nothing works yet.** The repo currently holds the addressing layer and
-> the design documents. See [docs/roadmap.md](docs/roadmap.md).
+> Status: **pre-alpha.** Transfers work end to end, over a real swarm, with resume and
+> verification. Multi-peer scheduling is still naive and there are no request timeouts yet —
+> see [docs/roadmap.md](docs/roadmap.md) for what M2 adds.
 
 ## What it is
 

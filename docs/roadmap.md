@@ -37,13 +37,25 @@ an in-memory transport with no real network, no timers, and fault injection for 
 matter (latency, loss, partition, a lying peer, a peer that vanishes). Real protomux channels
 run over it, so the engine can be written against the same mux it will use in production.
 
-### M1 — One file, one link
+### M1 — One file, one link ✅
 
 Hash on demand (cached by path + size + mtime), announce on the root's topic, serve ranges in
 place, write to the destination with a sidecar holding the verified-range bitfield.
 
-**Done when:** a multi-gigabyte file moves between two machines, no copy of it exists anywhere,
-and a transfer killed halfway resumes without rehashing what it already has.
+**Done:** `swarmwire send` prints a link and serves the file where it lies; `swarmwire get`
+takes that link and nothing else. Proven in `test/swarm` against the deterministic harness
+(including a liar and a seeder pulled mid-transfer) and in `test/net` against a real Hyperswarm
+on a private DHT, CLI processes included.
+
+**Known gaps, deliberately left for M2:**
+
+- **No request timeouts.** A peer that accepts a request and never answers stalls that group
+  until it disconnects. Harmless in the harness, not acceptable on a real network.
+- **No partial seeding.** A downloader cannot serve what it has yet: proving a group needs the
+  sibling hashes, which it does not keep. Recording each group's hash as it arrives would fix
+  this, and the sidecar is the place for them.
+- Scheduling is first-missing-first, not rarest-first, with a fixed window of 8.
+- Hashing is cached in memory only, so a restarted process rehashes what it serves.
 
 ### M2 — Swarm
 
