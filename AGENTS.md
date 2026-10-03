@@ -57,9 +57,16 @@ npm run test:swarm    # multi-peer tests over the in-memory transport
 **Layout:**
 
 - `test/unit/` — pure logic, no I/O, no network. Fast, run constantly.
-- `test/swarm/` — many peers in one process over an in-memory transport, with deterministic
-  ordering and fault injection (slow peer, lying peer, peer that vanishes). This is where
+- `test/swarm/` — many peers in one process over the in-memory transport in
+  `test/helpers/network.js`, with deterministic ordering and fault injection. This is where
   resilience claims get proved.
+
+  Peers join topics and meet whoever shares one, exactly like Hyperswarm, but **nothing is
+  delivered until `await net.settle()`** — so a test decides when each frame lands. Faults
+  available: `link.setLatency()`, `link.setDropRate()` (seeded, reproducible),
+  `link.partition()`, `peer.corruptOutgoing()` (a liar, or `null` to swallow), and
+  `peer.destroy()` (a peer that loses power). `net.pump()` lets writes reach the queue without
+  delivering them, for assertions on `net.inflight`.
 - `test/net/` — a small number of real-Hyperswarm smoke tests. Slow and flaky by nature; never
   the place to test logic.
 

@@ -27,13 +27,15 @@ No `add` step, no topic to join, no daemon required, no copy of the file anywher
 
 ## Milestones
 
-### M0 — Foundations *(in progress)*
+### M0 — Foundations ✅
 
 Repo, licence, CI, agent docs. Addressing settled and pinned by tests: BLAKE3 roots, link
 syntax, topic derivation. A deterministic multi-peer test harness before any engine code.
 
-**Done when:** addressing vectors pass in CI, and the harness can run a three-peer session over
-an in-memory transport with no real network.
+**Done:** addressing vectors pass, and `test/helpers/network.js` runs any number of peers over
+an in-memory transport with no real network, no timers, and fault injection for the cases that
+matter (latency, loss, partition, a lying peer, a peer that vanishes). Real protomux channels
+run over it, so the engine can be written against the same mux it will use in production.
 
 ### M1 — One file, one link
 
