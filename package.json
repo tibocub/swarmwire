@@ -7,8 +7,9 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "test": "npm run test:unit && npm run test:swarm",
+    "test": "npm run test:unit && npm run test:fs && npm run test:swarm",
     "test:unit": "brittle test/unit/*.test.js",
+    "test:fs": "brittle test/fs/*.test.js",
     "test:swarm": "brittle test/swarm/*.test.js"
   },
   "dependencies": {

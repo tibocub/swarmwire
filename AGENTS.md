@@ -57,6 +57,7 @@ npm run test:swarm    # multi-peer tests over the in-memory transport
 **Layout:**
 
 - `test/unit/` — pure logic, no I/O, no network. Fast, run constantly.
+- `test/fs/` — real files in a scratch directory: hashing in place, verified writes, resume.
 - `test/swarm/` — many peers in one process over the in-memory transport in
   `test/helpers/network.js`, with deterministic ordering and fault injection. This is where
   resilience claims get proved.
