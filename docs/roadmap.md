@@ -153,7 +153,7 @@ Specified next, in this order, each as its own feature under `specs/`:
    ask for group 0 first.
 4. A simulation of large swarms (bounded neighbours, per-node uplink) to decide whether
    seeder-side super-seeding and endgame mode earn their place.
-5. The CLI leaves for its own repository, `swarmwire-cli`.
+5. ✅ The CLI left for its own repository, `swarmwire-cli`.
 
 ### M4 — Handover to SwarmFS
 

@@ -145,7 +145,4 @@ Pre-alpha. See [docs/roadmap.md](docs/roadmap.md) for what is built and what is 
 only calls it. Peer counts and the watch set live in `lib/holdings.js`, the folder list reader in
 `lib/listing.js`.
 
-`bin/swarmwire.js` and `test/net/cli.test.js` are transitional. The command-line tool belongs in
-its own repository, `swarmwire-cli` (see the roadmap); until it is extracted they stay here so
-the network tests can drive a real send and get, they are not published, and they get no new
-features.
+The command-line tool lives in its own repository, [`swarmwire-cli`](https://github.com/tibocub/swarmwire-cli); this repository is the library and has no `bin`.
