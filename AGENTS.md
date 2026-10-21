@@ -18,6 +18,8 @@ Anything that cannot be expressed that way is out of scope.
 
 Allowed dependencies: `hyperswarm`, `protomux`, `compact-encoding`, `b4a`, `blake3-bao`,
 `hypercore-crypto` (for keypairs only — it does not pull in hypercore itself).
+Dev-only: `hyperdht`, to build a loopback swarm against a private DHT in `examples/send-get.js`
+and the network tests (`hyperswarm` hides the options that needs).
 
 What applications built on swarmwire can rely on, supply and must not expect lives in
 [docs/contract.md](docs/contract.md). Adding an export or a hook means updating it in the same
@@ -25,7 +27,7 @@ commit; `test/unit/contract.test.js` fails if it drifts.
 
 ## Runtime targets: Node **and** Bare
 
-Mobile apps are the reason, and both runtimes run the same 101 tests:
+Mobile apps are the reason, and both runtimes run the same tests:
 
 ```bash
 npm test              # Node
@@ -137,4 +139,13 @@ middle to act in.
 
 ## Current state
 
-Pre-alpha, M0. See [docs/roadmap.md](docs/roadmap.md) for what is built and what is next.
+Pre-alpha. See [docs/roadmap.md](docs/roadmap.md) for what is built and what is next.
+
+`lib/swarmwire.js` is past its size guideline: new behaviour goes in its own file and the node
+only calls it. Peer counts and the watch set live in `lib/holdings.js`, the folder list reader in
+`lib/listing.js`.
+
+`bin/swarmwire.js` and `test/net/cli.test.js` are transitional. The command-line tool belongs in
+its own repository, `swarmwire-cli` (see the roadmap); until it is extracted they stay here so
+the network tests can drive a real send and get, they are not published, and they get no new
+features.

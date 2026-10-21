@@ -286,3 +286,46 @@ test('frames queue behind each other on a busy link', async (t) => {
   await net.settle()
   t.is(heard().length, 3, 'and all of them do arrive')
 })
+
+test('a peer that only looks meets the one announcing, and not another that only looks', async (t) => {
+  const net = new TestNetwork()
+  const server = net.peer('server').join(TOPIC)
+  const reader = net.peer('reader')
+  const other = net.peer('other')
+
+  reader.join(TOPIC, { server: false, client: true })
+  other.join(TOPIC, { server: false, client: true })
+  await net.settle()
+
+  t.is(server.connections.length, 2, 'the server meets both')
+  t.is(reader.connections.length, 1, 'the readers do not meet each other')
+  t.is(other.connections.length, 1)
+})
+
+test('joining with no options still announces and returns the peer', async (t) => {
+  const net = new TestNetwork()
+  const alice = net.peer('alice').join(TOPIC)
+  const bob = net.peer('bob').join(TOPIC)
+
+  t.is(alice.name, 'alice')
+  t.ok(alice.serves(b4a.toString(TOPIC, 'hex')))
+  await net.settle()
+  t.is(bob.connections.length, 1)
+})
+
+test('destroying one session leaves the others on the topic in place', async (t) => {
+  const net = new TestNetwork()
+  const key = b4a.toString(TOPIC, 'hex')
+  const peer = net.peer('peer')
+
+  peer.join(TOPIC) // an announcing join, as a download would make
+  const looking = peer.join(TOPIC, { server: false, client: true })
+
+  await looking.destroy()
+  t.ok(peer.topics.has(key), 'the announcing session is untouched')
+  t.ok(peer.serves(key))
+
+  const only = net.peer('only').join(TOPIC, { server: false, client: true })
+  await only.destroy()
+  t.absent(net.peers.get('only').topics.has(key), 'the last session leaving leaves the topic')
+})

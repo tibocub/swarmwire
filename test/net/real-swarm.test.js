@@ -50,6 +50,45 @@ test('a third peer joins the swarm and also gets it', async (t) => {
   t.alike(read(path.join(dir, 'second')), read(file))
 })
 
+test('the sender is told who connects, what they hold, and when they leave', async (t) => {
+  const testnet = await createTestnet(3, { teardown: t.teardown })
+  const dir = tmpdir(t)
+  const file = writeSample(dir, 'original', 200000)
+
+  const seeder = node(t, testnet)
+  const leecher = node(t, testnet)
+
+  const connected = new Promise((resolve) => seeder.once('peer-connected', resolve))
+  const { link } = await seeder.serve(file)
+
+  await leecher.download(link, path.join(dir, 'copy'))
+  await connected
+  t.is(seeder.peerCount, 1)
+
+  // The receiver's last `holds` may still be on its way when its download resolves.
+  await until(() => seeder.counts(link).seeders === 1)
+  t.alike(seeder.counts(link), { peers: 1, seeders: 1, leechers: 0 })
+
+  const gone = new Promise((resolve) => seeder.once('peer-disconnected', resolve))
+  await leecher.swarm.destroy()
+  await gone
+
+  t.alike(seeder.counts(link), { peers: 0, seeders: 0, leechers: 0 })
+})
+
+function until (condition, { timeout = 20000 } = {}) {
+  const started = Date.now()
+
+  return new Promise((resolve, reject) => {
+    const check = () => {
+      if (condition()) return resolve()
+      if (Date.now() - started > timeout) return reject(new Error('condition never held'))
+      setTimeout(check, 50)
+    }
+    check()
+  })
+}
+
 function node (t, testnet) {
   // Reachable nodes: the default testnet node is firewalled, so nothing can be announced to it.
   const swarm = new Hyperswarm({ dht: testnet.createNode({ ephemeral: false, firewalled: false }) })

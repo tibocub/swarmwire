@@ -166,8 +166,13 @@ announce.
 size, request block size, wire messages, scheduling, how outboard trees are cached, the sidecar
 format for partial downloads.
 
-Protocol messages carry a version and a capability set in the handshake. Unknown message types
-are ignored rather than treated as errors, so new message types never break old peers.
+The handshake carries a version and the group size (`groupLog`); it carries no capability set.
+Unknown message types are ignored rather than treated as errors, so new message types never
+break old peers.
+
+What a peer holds is learned by asking: `want` is answered with `have` (or `unavailable`) and
+followed by `holds` as the peer gains groups. A node that only serves sends `want` for what it
+serves, which is how it counts its seeders and leechers. No message exists for this.
 
 ## Open questions
 

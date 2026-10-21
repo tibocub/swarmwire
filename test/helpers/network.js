@@ -194,20 +194,55 @@ class TestPeer extends EventEmitter {
     this.topics = new Set()
     this.destroyed = false
 
+    this._sessions = new Map() // topic → the sessions joined on it
+
     this._connections = new Map()
     this._corrupt = null
   }
 
-  /** @param {Uint8Array} topic */
-  join (topic) {
-    this.topics.add(b4a.toString(topic, 'hex'))
+  /**
+   * Like Hyperswarm's `join`: `{ server: false }` looks the topic up without announcing, so
+   * two such peers never meet, and the result is a session that leaves only itself.
+   *
+   * With no options it returns the peer, so tests can write `net.peer('a').join(topic)`.
+   *
+   * @param {Uint8Array} topic
+   * @param {{server?: boolean, client?: boolean}} [opts]
+   */
+  join (topic, opts) {
+    const key = b4a.toString(topic, 'hex')
+    const session = { server: opts?.server ?? true }
+
+    let sessions = this._sessions.get(key)
+    if (!sessions) this._sessions.set(key, sessions = new Set())
+    sessions.add(session)
+    this.topics.add(key)
+
+    if (opts === undefined) return this
+
+    return {
+      flushed: async () => {},
+      destroy: async () => {
+        sessions.delete(session)
+        if (sessions.size > 0 || this._sessions.get(key) !== sessions) return
+        this._sessions.delete(key)
+        this.topics.delete(key)
+      }
+    }
+  }
+
+  /** Leave a topic entirely, every session on it. @param {Uint8Array} topic */
+  leave (topic) {
+    const key = b4a.toString(topic, 'hex')
+    this._sessions.delete(key)
+    this.topics.delete(key)
     return this
   }
 
-  /** @param {Uint8Array} topic */
-  leave (topic) {
-    this.topics.delete(b4a.toString(topic, 'hex'))
-    return this
+  /** Does this peer announce itself on the topic? */
+  serves (key) {
+    for (const session of this._sessions.get(key) ?? []) if (session.server) return true
+    return false
   }
 
   /** Every connection this peer currently holds. */
@@ -231,6 +266,7 @@ class TestPeer extends EventEmitter {
     if (this.destroyed) return
     this.destroyed = true
     this.topics.clear()
+    this._sessions.clear()
 
     for (const [name, stream] of this._connections) {
       const other = this.network.peers.get(name)
@@ -328,8 +364,9 @@ class Link {
 // -- helpers ----------------------------------------------------------------
 
 function sharesTopic (a, b) {
+  // Someone has to be announcing: two peers that are only looking never find each other.
   for (const topic of a.topics) {
-    if (b.topics.has(topic)) return true
+    if (b.topics.has(topic) && (a.serves(topic) || b.serves(topic))) return true
   }
   return false
 }

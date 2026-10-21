@@ -39,8 +39,12 @@ a peer because of a hint. The application dials through the connection it owns.
 The application can decide, per peer and per content, whether content is served.
 
 - Decided **per content root**. Each file of a folder is its own root and is decided separately;
-  the decision is told which folder root the file was requested through, if any.
-- **Deny on failure**: a decision that throws, times out or never answers is a deny.
+  the decision is told which folder root the file was requested through, if any. The folder's own
+  file list is content too, with its own root, and is decided like any other root.
+- **Deny on failure**: a decision that throws, times out or never answers is a deny. How long a
+  decision may take is an option of the admission mechanism, set by the application (its
+  default is chosen when the mechanism is built); the contract promises only that running out
+  of time is a deny.
 - A deny is answered **exactly as content swarmwire does not hold**. A refused peer learns nothing
   about what is held, its size or its name.
 - With no decision installed, content is served as it is today.

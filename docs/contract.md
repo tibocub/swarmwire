@@ -21,10 +21,10 @@ code (`serveCollection`, `downloadCollection`). See `AGENTS.md` for the invarian
 | Partial seeding: a download in progress serves what it holds | exists | - | `test/swarm/partial.test.js` |
 | Application supplies the network connection (any object with `join`, `leave`, a `connection` event) | exists | - | `test/helpers/network.js`, `test/net/real-swarm.test.js` |
 | Peer identity: the remote public key of the connection | exists | - | `test/swarm/transfer.test.js` |
-| Peer hints (preferred peers, priorities) | planned | 002 | - |
-| Admission decisions | planned | 002 | - |
-| Peer activity events and counts | planned | 002 | - |
-| Folder file-list reader, public | planned | 002 | - |
+| Peer activity events, peer count, seeder and leecher counts | exists | - | `test/swarm/peers.test.js` |
+| Folder file-list reader (look-only, in memory), and downloading one listed file | exists | - | `test/swarm/list.test.js` |
+| Peer hints (preferred peers, priorities) | planned | 003 | - |
+| Admission decisions | planned | 003 | - |
 
 ## 3. Rules the application can rely on
 
@@ -39,8 +39,12 @@ a peer because of a hint. The application dials through the connection it owns.
 The application can decide, per peer and per content, whether content is served.
 
 - Decided **per content root**. Each file of a folder is its own root and is decided separately;
-  the decision is told which folder root the file was requested through, if any.
-- **Deny on failure**: a decision that throws, times out or never answers is a deny.
+  the decision is told which folder root the file was requested through, if any. The folder's own
+  file list is content too, with its own root, and is decided like any other root.
+- **Deny on failure**: a decision that throws, times out or never answers is a deny. How long a
+  decision may take is an option of the admission mechanism, set by the application (its
+  default is chosen when the mechanism is built); the contract promises only that running out
+  of time is a deny.
 - A deny is answered **exactly as content swarmwire does not hold**. A refused peer learns nothing
   about what is held, its size or its name.
 - With no decision installed, content is served as it is today.
@@ -49,10 +53,25 @@ The application can decide, per peer and per content, whether content is served.
 
 ### 3.3 Peer activity
 
-Events when a peer connects and disconnects, and, for one content root, the number of connected
-peers and how many hold all of it. **Direct connections only**: a snapshot that may lag, not a
-count of the swarm. Global counts and chunk rarity across the network are a tracker's job, not
-swarmwire's.
+`Swarmwire` is an event emitter.
+
+- `peer-connected` and `peer-disconnected`, each with `{ id }` (the remote public key, hex). Each
+  fires **once per distinct peer**, and only for a peer that completed the swarmwire handshake: a
+  connection that never speaks the protocol is neither announced nor counted. Two connections
+  from one key are one peer. A peer that vanishes without closing is reported when its connection
+  closes; `peerCount` is already correct when the event fires.
+- `peerCount`: connected peers, never negative.
+- `counts(link)` returns `{ peers, seeders, leechers }` for a file or folder link, synchronously.
+  A **seeder** holds all of it, a **leecher** holds part, and a peer that has said nothing about
+  that content is in `peers` only. For a folder, a seeder holds the file list and every listed
+  file; a peer holding the list alone is a leecher. Content the node knows nothing about, and a
+  folder whose list is not yet known, give zeros, never an error.
+- A node that only serves still learns what its peers hold: it asks each connected peer about
+  the content it serves, with the ordinary `want` message. No message was added. A peer that does
+  not answer is simply uncounted.
+
+**Direct connections only**: a snapshot that may lag, not a count of the swarm. Global counts and
+chunk rarity across the network are a tracker's job, not swarmwire's.
 
 ### 3.4 Identity
 
@@ -61,9 +80,13 @@ key to a user or device is the application's job (Principle II).
 
 ### 3.5 Choosing files of a folder
 
-Read the folder's file list without fetching content, then download the chosen files one by one.
-Which files, and any interface for choosing, belong to the application. *Planned: the list reader
-is not public yet.*
+`readList(link)` reads a folder's file list without fetching any content: it resolves to
+`{ files: [{ path, root, size }], size }`, and `stop()` gives up waiting, like a download. It
+writes nothing to disk and only **looks** for peers: it never announces this node as a provider.
+A link that is not a folder is refused, and so is a list with an unsafe path (the same paths a
+whole-folder download refuses; nothing is repaired). `downloadFile(link, file, outPath)` then
+downloads one listed file, using only the folder's link and the list entry, and does not announce
+it separately. Which files, and any interface for choosing, belong to the application.
 
 ### 3.6 The shared connection
 
@@ -109,9 +132,10 @@ DEFAULT_GROUP_LOG
 ```
 
 **Stable** (changes bump the version and are in the changelog): `Swarmwire`
-(`serve`, `serveCollection`, `download`, `downloadCollection`, `unserve`, `destroy`), `Download`
-(awaitable; events `progress`, `rejected`, `timeout`, `stalled`), `rootOf`, `formatLink`,
-`parseLink`, `SCHEME`.
+(`serve`, `serveCollection`, `download`, `downloadCollection`, `readList`, `downloadFile`,
+`unserve`, `destroy`, `peerCount`, `counts`; events `peer-connected`, `peer-disconnected`),
+`Download` (awaitable; events `progress`, `rejected`, `timeout`, `stalled`), `rootOf`,
+`formatLink`, `parseLink`, `SCHEME`.
 
 **Exported for tests and advanced use, may change in any 0.x**: everything else.
 

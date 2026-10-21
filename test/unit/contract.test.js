@@ -48,3 +48,13 @@ test('every planned capability names the feature that will deliver it', (t) => {
 
   for (const row of rows) t.ok(/^\d{3}$/.test(row.delivered), `"${row.capability}" names a feature`)
 })
+
+test('a planned capability does not name a feature whose work is already done', (t) => {
+  for (const row of capabilities().filter((row) => row.status === 'planned')) {
+    const dir = fs.readdirSync(ROOT + 'specs').find((name) => name.startsWith(row.delivered + '-'))
+    if (!dir) continue // not specified yet: a future feature
+
+    const tasks = b4a.toString(fs.readFileSync(ROOT + 'specs/' + dir + '/tasks.md'))
+    t.ok(/^- \[ \] T\d+/m.test(tasks), `"${row.capability}" is still planned, so feature ${row.delivered} must have work left`)
+  }
+})

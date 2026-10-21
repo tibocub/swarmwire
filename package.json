@@ -1,6 +1,6 @@
 {
   "name": "swarmwire-lib",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Content-addressed, verified file transfer between filesystems over Hyperswarm. No copies, no cores, no trackers.",
   "type": "module",
   "main": "index.js",
@@ -87,7 +87,8 @@
     "bare-process": "^4.2.4",
     "bare-subprocess": "^5.0.0",
     "bare-url": "^2.1.7",
-    "brittle": "^3.7.0"
+    "brittle": "^3.7.0",
+    "hyperdht": "^6.34.1"
   },
   "engines": {
     "bare": ">=1.16",

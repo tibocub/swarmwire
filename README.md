@@ -9,35 +9,19 @@ Files are served in place, from wherever they already live on disk. Nothing is c
 store, a core, or a cache first.
 
 ```
-npm i swarmwire-lib
+npm i swarmwire-lib hyperswarm
 ```
 
-One side serves a file and prints a link. The other side hands the link to `download`. (This is
-`examples/send-get.js`; in the repository it imports `../index.js` instead of `swarmwire-lib`. It is
-an ES module, so your project needs `"type": "module"` or a `.mjs` file.)
+One side serves a file and prints a link. The other side hands the link to `download`:
 
 ```js
-/**
- * Send a file to someone, or get one.
- *
- *   node examples/send-get.js send ./holidays.mp4
- *   node examples/send-get.js get 'swarmwire://…' ./holidays.mp4
- *
- * `--bootstrap host:port` points both sides at a private DHT; leave it out for the real one.
- */
-
 import process from 'process'
 import Hyperswarm from 'hyperswarm'
-import DHT from 'hyperdht'
-
 import { Swarmwire } from 'swarmwire-lib'
 
-const args = process.argv.slice(2)
-const flag = args.indexOf('--bootstrap')
-const bootstrap = flag === -1 ? null : args.splice(flag, 2)[1]
-const [mode, target, out] = args
+const [mode, target, out] = process.argv.slice(2)
 
-const swarm = bootstrap ? privateSwarm(bootstrap) : new Hyperswarm()
+const swarm = new Hyperswarm()
 const node = new Swarmwire({ swarm })
 
 if (mode === 'send') {
@@ -47,21 +31,15 @@ if (mode === 'send') {
 } else if (mode === 'get') {
   await node.download(target, out)
   console.log(out)
-} else {
-  console.log('usage: send <file> | get <link> <out>   [--bootstrap host:port]')
-  process.exitCode = 1
 }
 
 await node.destroy()
 await swarm.destroy()
-
-// A loopback DHT only works if the node binds there and is not firewalled.
-function privateSwarm (address) {
-  const [host, port] = address.split(':')
-  const dht = new DHT({ bootstrap: [{ host, port: Number(port) }], ephemeral: false, firewalled: false, host: '127.0.0.1' })
-  return new Hyperswarm({ dht })
-}
 ```
+
+This is `examples/send-get.js` without its `--bootstrap` option, which points both sides at a
+private DHT so the test suite needs no internet. It is an ES module, so your project needs
+`"type": "module"` or a `.mjs` file.
 
 ```
 $ node examples/send-get.js send ./holidays.mp4
@@ -72,11 +50,13 @@ $ node examples/send-get.js get 'swarmwire://10db63…' ./holidays.mp4
 ```
 
 A folder goes the same way, as one link: `serveCollection` and `downloadCollection`.
-The command-line tool built on this library is moving to its own package, `swarmwire-cli`.
+The command-line tool built on this library is moving to its own package,
+[`swarmwire-cli`](https://github.com/tibocub/swarmwire-cli) ([npm](https://www.npmjs.com/package/swarmwire-cli)).
 
-> Status: **pre-alpha.** Transfers work end to end, over a real swarm, with resume and
-> verification. Multi-peer scheduling is still naive and there are no request timeouts yet —
-> see [docs/roadmap.md](docs/roadmap.md) for what M2 adds.
+> Status: **pre-alpha.** Transfers work end to end, over a real swarm, with resume,
+> verification, request timeouts, partial seeding, rarest-first selection and an adaptive
+> request window. Behaviour with very many peers is not measured yet. See
+> [docs/roadmap.md](docs/roadmap.md) for what is built and what is next.
 
 ## What it is
 
