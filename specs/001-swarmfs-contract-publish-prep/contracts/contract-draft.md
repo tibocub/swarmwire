@@ -20,7 +20,7 @@ code (`serveCollection`, `downloadCollection`). See `AGENTS.md` for the invarian
 | Serve and download a folder as one link | exists | - | `test/swarm/collection.test.js` |
 | Partial seeding: a download in progress serves what it holds | exists | - | `test/swarm/partial.test.js` |
 | Application supplies the network connection (any object with `join`, `leave`, a `connection` event) | exists | - | `test/helpers/network.js`, `test/net/real-swarm.test.js` |
-| Peer identity: the remote public key of the connection | exists | - | `test/swarm/network.test.js` |
+| Peer identity: the remote public key of the connection | exists | - | `test/swarm/transfer.test.js` |
 | Peer hints (preferred peers, priorities) | planned | 002 | - |
 | Admission decisions | planned | 002 | - |
 | Peer activity events and counts | planned | 002 | - |

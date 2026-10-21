@@ -1,14 +1,31 @@
 {
-  "name": "swarmwire",
-  "version": "0.0.0",
+  "name": "swarmwire-lib",
+  "version": "0.1.0",
   "description": "Content-addressed, verified file transfer between filesystems over Hyperswarm. No copies, no cores, no trackers.",
   "type": "module",
   "main": "index.js",
   "license": "MIT",
-  "private": true,
-  "bin": {
-    "swarmwire": "bin/swarmwire.js"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tibocub/swarmwire.git"
   },
+  "bugs": {
+    "url": "https://github.com/tibocub/swarmwire/issues"
+  },
+  "homepage": "https://github.com/tibocub/swarmwire#readme",
+  "keywords": [
+    "hyperswarm",
+    "p2p",
+    "file-transfer",
+    "content-addressed",
+    "bare"
+  ],
+  "files": [
+    "index.js",
+    "lib/",
+    "docs/format.md",
+    "docs/contract.md"
+  ],
   "imports": {
     "fs": {
       "bare": "bare-fs",
@@ -49,7 +66,8 @@
     "test:bare": "bare node_modules/brittle/bin/bare.js test/unit/*.test.js test/fs/*.test.js test/swarm/*.test.js",
     "test:bare:net": "bare node_modules/brittle/bin/bare.js test/net/*.test.js",
     "bench": "node bench/swarm.js",
-    "bench:net": "node bench/throughput.js"
+    "bench:net": "node bench/throughput.js",
+    "check:pack": "node scripts/check-pack.js"
   },
   "dependencies": {
     "b4a": "^1.9.0",

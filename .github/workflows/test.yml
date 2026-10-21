@@ -20,6 +20,8 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: npm ci
       - run: npm test
+      - run: npm run check:pack
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
 
   # The same suite on Bare, the runtime mobile builds use. A dependency that quietly needs a
   # node builtin only shows up here.

@@ -19,6 +19,10 @@ Anything that cannot be expressed that way is out of scope.
 Allowed dependencies: `hyperswarm`, `protomux`, `compact-encoding`, `b4a`, `blake3-bao`,
 `hypercore-crypto` (for keypairs only — it does not pull in hypercore itself).
 
+What applications built on swarmwire can rely on, supply and must not expect lives in
+[docs/contract.md](docs/contract.md). Adding an export or a hook means updating it in the same
+commit; `test/unit/contract.test.js` fails if it drifts.
+
 ## Runtime targets: Node **and** Bare
 
 Mobile apps are the reason, and both runtimes run the same 101 tests:

@@ -133,6 +133,28 @@ Paths out of a manifest are validated rather than repaired: absolute paths, `..`
 letters, control characters, duplicates and non-canonical spellings are all refused. A folder
 packed on Windows has the same address as the same folder packed on Linux.
 
+### Contract and first publication ✅
+
+[contract.md](contract.md) is what applications can rely on, supply and must not expect, and a
+unit test fails if its export list drifts. The library publishes as `swarmwire-lib` (the CLI
+will be `swarmwire-cli`; `swarmwire` itself belongs to an unrelated project), version 0.1.0,
+containing only `index.js`, `lib/` and the format and contract documents. See
+[releasing.md](releasing.md). Specified in `specs/001-swarmfs-contract-publish-prep/`.
+
+### Next: what the contract marks as planned
+
+Specified next, in this order, each as its own feature under `specs/`:
+
+1. Peer activity events and counts (direct connections only), and a public reader for a
+   folder's file list, so an application can take part of a folder.
+2. Admission decisions (per peer, per content root, deny on failure, a refusal looks like
+   "not held") and peer hints (which connected peers to ask first).
+3. A random tie-break in rarest-first selection, so a thousand fresh downloaders do not all
+   ask for group 0 first.
+4. A simulation of large swarms (bounded neighbours, per-node uplink) to decide whether
+   seeder-side super-seeding and endgame mode earn their place.
+5. The CLI leaves for its own repository, `swarmwire-cli`.
+
 ### M4 — Handover to SwarmFS
 
 SwarmFS rebuilt as the layer above: directories in hypergraph, bytes through swarmwire.

@@ -18,6 +18,31 @@ Run from the repository root once the tasks are done.
    repository. Delete `/tmp/consumer` afterwards.
 5. **Questions test** (SC-001): give `docs/contract.md` and the prepared ten questions to someone
    who has not read the source; every answer must match the library's behaviour.
+
+   The ten questions, with the answer the contract gives. Answers come from `docs/contract.md`
+   alone, and each must also be true of the library (planned items are answered "not yet").
+
+   1. If every peer hint I give is wrong, does the download still finish? *Yes. Hints add options,
+      never correctness, and cannot stall a transfer.*
+   2. Does a peer hint make swarmwire connect to that peer? *No. It only changes which
+      already-connected peers are asked first; the application dials.*
+   3. How do I stop a peer outside my space from downloading something? *With an admission
+      decision (planned, feature 002), made per peer and per content root.*
+   4. What does a refused peer learn? *Nothing: it gets the same answer as for content swarmwire
+      does not hold.*
+   5. What if my admission decision throws or never answers? *It counts as a deny.*
+   6. A folder has 1,000 files. How many admission decisions are made? *One per file, each told
+      which folder it was requested through.*
+   7. How do I download only some files of a folder? *Read the folder's file list (public reader
+      planned, feature 002), then download the chosen files individually. Choosing is the
+      application's job.*
+   8. What does "3 peers connected" mean? *Direct connections only: a snapshot that may lag, not a
+      count of the swarm.*
+   9. Who owns the network connection and the keys? *The application. swarmwire attaches to the
+      connection event and leaves the connection alone.*
+   10. Can swarmwire tell me which peers hold which chunks across the whole network, or what a
+       file is called? *No. Global counts and rarity are a tracker's job; names belong to
+       SwarmFS.*
 6. **README**: the example matches `examples/send-get.js` exactly, and the CLI paragraph points at
    `swarmwire-cli`.
 
