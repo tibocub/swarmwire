@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0
+
+- **Downloads no longer proceed roughly in file order.** A download scans for wanted groups from
+  a random place in the file and orders equally rare groups at random. A crowd of newcomers therefore spreads a seeder's uploads
+  over the whole file instead of all asking for its first groups. Fixed along the way: a peer
+  holding only groups beyond the first 256 missing was asked for nothing.
+- Per-group availability counts replace a loop over every peer for every candidate group.
+- `npm run bench:sim` (not shipped): a seeded model of a large swarm comparing selection
+  strategies. `docs/scaling.md` records the numbers and why endgame mode and both kinds of
+  super-seeding were not built.
+- `docs/contract.md`: download order added; hints and admission are now planned for feature 004.
+
 ## 0.2.0
 
 - `Swarmwire` is now an event emitter: `peer-connected` and `peer-disconnected`, each `{ id }`,

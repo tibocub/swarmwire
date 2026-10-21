@@ -116,7 +116,9 @@ npm run test:swarm    # multi-peer tests over the in-memory transport
 `npm run bench` measures what the scheduler controls, on the deterministic harness: requests
 per group, wasted requests, proof overhead. Those numbers are reproducible, so a change that
 makes them worse shows up immediately. `npm run bench:net` measures wall-clock throughput over
-a real swarm on loopback.
+a real swarm on loopback. `npm run bench:sim` runs the swarm model in `bench/sim/` (a thousand
+downloaders take minutes per run): it is how selection strategies were compared, and the way to
+re-check one; see `docs/scaling.md`.
 
 The harness models latency *and* bandwidth, which is what makes request pipelining
 measurable: a link carries a frame while it transmits it, so a shallow window leaves the wire

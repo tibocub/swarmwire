@@ -1,0 +1,16 @@
+# Optional hooks only: they offer the next check, they never run on their own.
+hooks:
+  after_tasks:
+    - extension: core
+      command: speckit.analyze
+      enabled: true
+      optional: true
+      description: Check spec, plan and tasks agree before any code is written
+      prompt: Run the cross-artifact analysis?
+  after_implement:
+    - extension: core
+      command: speckit.converge
+      enabled: true
+      optional: true
+      description: Compare the code with the spec, plan and tasks and append what is left
+      prompt: Run convergence?

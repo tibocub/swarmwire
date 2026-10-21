@@ -149,10 +149,10 @@ Specified next, in this order, each as its own feature under `specs/`:
    for a folder's file list, so an application can take part of a folder.
 2. Admission decisions (per peer, per content root, deny on failure, a refusal looks like
    "not held") and peer hints (which connected peers to ask first).
-3. A random tie-break in rarest-first selection, so a thousand fresh downloaders do not all
-   ask for group 0 first.
-4. A simulation of large swarms (bounded neighbours, per-node uplink) to decide whether
-   seeder-side super-seeding and endgame mode earn their place.
+3. ✅ (0.3.0) Random selection: random window and random ties, so a
+   thousand fresh downloaders do not all ask for the same groups.
+4. ✅ (0.3.0) A simulation of large swarms (`npm run bench:sim`); endgame mode and both kinds of
+   super-seeding did not clear the bar. See [scaling.md](scaling.md).
 5. ✅ The CLI left for its own repository, `swarmwire-cli`.
 
 ### M4 — Handover to SwarmFS

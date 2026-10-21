@@ -1,6 +1,6 @@
 {
   "name": "swarmwire-lib",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Content-addressed, verified file transfer between filesystems over Hyperswarm. No copies, no cores, no trackers.",
   "type": "module",
   "main": "index.js",
@@ -67,6 +67,7 @@
     "test:bare:net": "bare node_modules/brittle/bin/bare.js test/net/*.test.js",
     "bench": "node bench/swarm.js",
     "bench:net": "node bench/throughput.js",
+    "bench:sim": "node bench/swarm-sim.js",
     "check:pack": "node scripts/check-pack.js"
   },
   "dependencies": {
