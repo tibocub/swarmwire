@@ -62,7 +62,7 @@ Decisions already made (do not reopen): package is `swarmwire-lib` 0.1.0; `bin` 
 - [X] T016 Write the ten reading-test questions into `specs/001-swarmfs-contract-publish-prep/quickstart.md` (step 5), covering hints, admission, refusals, peer counts, folders, the shared connection and what swarmwire will not do. Write them from the spec, not by reading `lib/`. Each question needs a one-line expected answer from the spec.
 - [X] T017 Run the whole of `specs/001-swarmfs-contract-publish-prep/quickstart.md`, including `npm run test:all`, the tarball install into a scratch directory outside the repo, and the ten-question reading test from T016, answered by someone (or a fresh session) that has not read `lib/`. Also review every `exists` row of the contract by hand and confirm its Proof file really tests that claim (T002 only checks the file exists). Delete the scratch directory afterwards.
 - [X] T018 Update `docs/roadmap.md`: record that the contract exists, that the package is published as `swarmwire-lib`, and add the planned feature 002 (peer hints, admission decisions, peer events and counts, public folder file-list reader, random tie-break) so the milestone view matches the specs.
-- [ ] T019 Hand-off, not code: tell the user the exact commands to publish (`npm publish`, with their 2FA) and to claim `swarmwire-cli` with a placeholder. Do not run either. After the user has published, install `swarmwire-lib` from the registry into a scratch directory outside the repo and run the example against the private DHT or the public one, to prove FR-009 and SC-003.
+- [X] T019 Hand-off, not code: tell the user the exact commands to publish (`npm publish`, with their 2FA) and to claim `swarmwire-cli` with a placeholder. Do not run either. After the user has published, install `swarmwire-lib` from the registry into a scratch directory outside the repo and run the example against the private DHT or the public one, to prove FR-009 and SC-003.
 
 ## Dependencies and order
 
@@ -78,3 +78,11 @@ After T003: T004 (tests), T005 (AGENTS.md), T006 (README table), T007 (check scr
 ## Implementation strategy
 
 MVP is Phase 2 alone: the contract, tested. It unblocks SwarmFS design immediately. Then Phase 3 (publishable), then Phase 4 (example). Stop after any phase and the repo is consistent.
+
+## Phase 6: Convergence
+
+- [X] T020 Make the README example installable by following the README alone: list every package the snippet imports in the install line (`npm i swarmwire-lib hyperswarm`, plus `hyperdht` only if the private-DHT branch stays in the quoted snippet), declare `hyperdht` in `devDependencies` in `package.json` because `examples/send-get.js` and the tests import it, and add one line to the allowed-dependencies paragraph in `AGENTS.md` saying why (private-DHT swarm for the example and tests). Keep `check:pack` and `npm run test:all` green per FR-013, SC-003, Constitution Constraints (partial)
+- [X] T021 Run the ten-question reading test written in `specs/001-swarmfs-contract-publish-prep/quickstart.md` step 5: give `docs/contract.md` and nothing else to a reader who has not read `lib/` (the user, or a fresh session started without this conversation), compare every answer with the expected one, fix `docs/contract.md` wherever a question was answered wrongly or not at all, and record the result (questions answered correctly out of ten) in `quickstart.md` per SC-001 (partial)
+- [X] T022 Record the transitional state in `AGENTS.md`: `bin/swarmwire.js` and `test/net/cli.test.js` stay here only until the CLI is extracted to `swarmwire-cli`, are not published, and must not gain features; point to the CLI extraction item in `docs/roadmap.md` per Constitution V (contradicts, transitional)
+- [X] T023 Link the CLI from the README sentence "moving to its own package, `swarmwire-cli`" to `https://github.com/tibocub/swarmwire-cli` (repository field of the published placeholder) and the npm package page per FR-014 (partial)
+- [X] T024 Correct the "Status" paragraph of `README.md` (it still says there are no request timeouts; `docs/roadmap.md` records them as done) so the npm page text matches the roadmap per FR-012 (partial)

@@ -43,6 +43,12 @@ Run from the repository root once the tasks are done.
    10. Can swarmwire tell me which peers hold which chunks across the whole network, or what a
        file is called? *No. Global counts and rarity are a tracker's job; names belong to
        SwarmFS.*
+
+   **Result, 2026-10-21**: a fresh subagent given only `docs/contract.md` answered 10 of 10
+   correctly. It flagged four gaps: no timeout value for admission (Q5), whether the folder's own
+   file list is decided (Q6), and no names yet for the file-list reader (Q7) and the counts API
+   (Q8). Q5 and Q6 were clarified in the contract; Q7 and Q8 are planned APIs whose names feature
+   002 will fix.
 6. **README**: the example matches `examples/send-get.js` exactly, and the CLI paragraph points at
    `swarmwire-cli`.
 

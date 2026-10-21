@@ -145,8 +145,8 @@ containing only `index.js`, `lib/` and the format and contract documents. See
 
 Specified next, in this order, each as its own feature under `specs/`:
 
-1. Peer activity events and counts (direct connections only), and a public reader for a
-   folder's file list, so an application can take part of a folder.
+1. ✅ (0.2.0) Peer activity events and counts (direct connections only), and a public reader
+   for a folder's file list, so an application can take part of a folder.
 2. Admission decisions (per peer, per content root, deny on failure, a refusal looks like
    "not held") and peer hints (which connected peers to ask first).
 3. A random tie-break in rarest-first selection, so a thousand fresh downloaders do not all

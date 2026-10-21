@@ -9,6 +9,7 @@ import {
   totalSize,
   MANIFEST_TYPE
 } from '../../lib/collection.js'
+import { MAX_MANIFEST_BYTES } from '../../lib/collection.js'
 import { rootOf } from '../../lib/address.js'
 
 const ROOT_A = 'a'.repeat(64)
@@ -117,3 +118,7 @@ test('normalising is idempotent', (t) => {
 function manifest (files) {
   return b4a.from(JSON.stringify({ swarmwire: MANIFEST_TYPE, files }), 'utf8')
 }
+
+test('a manifest past the size limit is refused unread', (t) => {
+  t.exception(() => decodeManifest(new Uint8Array(MAX_MANIFEST_BYTES + 1)), /implausibly large/)
+})
