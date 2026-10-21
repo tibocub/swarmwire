@@ -23,8 +23,9 @@ code (`serveCollection`, `downloadCollection`). See `AGENTS.md` for the invarian
 | Peer identity: the remote public key of the connection | exists | - | `test/swarm/transfer.test.js` |
 | Peer activity events, peer count, seeder and leecher counts | exists | - | `test/swarm/peers.test.js` |
 | Folder file-list reader (look-only, in memory), and downloading one listed file | exists | - | `test/swarm/list.test.js` |
-| Peer hints (preferred peers, priorities) | planned | 003 | - |
-| Admission decisions | planned | 003 | - |
+| Download order spread by random choice (no two newcomers ask for the same thing first) | exists | - | `test/swarm/spread.test.js` |
+| Peer hints (preferred peers, priorities) | planned | 004 | - |
+| Admission decisions | planned | 004 | - |
 
 ## 3. Rules the application can rely on
 
@@ -72,6 +73,13 @@ The application can decide, per peer and per content, whether content is served.
 
 **Direct connections only**: a snapshot that may lag, not a count of the swarm. Global counts and
 chunk rarity across the network are a tracker's job, not swarmwire's.
+
+### 3.3a Download order
+
+Groups are fetched rarest first, equal rarity broken at random, starting from a random place in
+the file. **A download does not proceed in file order**: a file is complete when every group is
+held, and nothing is promised about reading it while it downloads. How the choice was made, and
+what was measured, is in `docs/scaling.md` in the repository (not part of the package).
 
 ### 3.4 Identity
 

@@ -90,7 +90,10 @@ test('what a partial peer serves still verifies', async (t) => {
 
   const bytes = read(path.join(dir, 'late'))
   const original = read(file)
-  for (let i = 0; i < second.have; i++) {
+  // Groups arrive in no particular order, so check whichever ones are held.
+  const held = (i) => second.bitfield()[i >> 3] & (1 << (i & 7))
+  for (let i = 0; i < second.total; i++) {
+    if (!held(i)) continue
     const at = i * 16384
     t.alike(bytes.subarray(at, at + 16384), original.subarray(at, at + 16384), `group ${i}`)
   }
