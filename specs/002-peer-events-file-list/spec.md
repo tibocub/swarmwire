@@ -127,8 +127,10 @@ exactly those two arrived intact and that the other three were never requested f
   without fetching the list twice.
 - A folder with zero files: the list is empty, total size zero.
 - The list is large (tens of thousands of files). It is returned whole; there is no paging.
-- A peer sends a malformed or implausibly large list. It is refused, the peer is not trusted for
-  that content, and another peer can still supply the list.
+- A peer sends bytes that do not match the folder's address. They are refused, that peer gains
+  nothing, and another peer can still supply the list. A list that does match its address but
+  contains an unsafe path or is implausibly large is the folder's real content: the read fails
+  with an error, exactly as a whole-folder download does.
 
 ## Requirements *(mandatory)*
 
@@ -209,9 +211,9 @@ exactly those two arrived intact and that the other three were never requested f
 
 - Seeders and leechers are known only for peers that have reported what they hold. Today a peer
   only learns another's holdings if it asked for that content, so a node that only serves does not
-  see them; delivering FR-004b is expected to need a backward-compatible addition to the wire
-  protocol (unknown messages are ignored by old peers, Invariant 5), designed in the plan. Peers
-  that have not reported are counted in the connected total only.
+  see them. FR-004b is delivered without a wire change: a serving node sends the ordinary
+  `want` for what it serves, which peers already answer. Peers that have not reported are counted
+  in the connected total only.
 - The count of connected peers includes only peers that completed the protocol handshake, not every
   network connection.
 - "Identity" is the peer's public key, as described in the contract.

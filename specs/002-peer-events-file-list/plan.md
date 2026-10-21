@@ -81,7 +81,7 @@ lib/
 ├── listing.js              # NEW: Listing (thenable list reader) and MemoryDestination
 └── swarmwire.js            # EDIT: EventEmitter, peer events, holdings hooks, wants for served
                             #       roots, readList, downloadFile, downloadCollection on top of them
-index.js                    # EDIT: export anything new (Listing if public)
+index.js                    # unchanged: nothing new is exported (Listing is only a return type)
 test/
 ├── helpers/network.js      # EDIT: join(topic, {server, client}) returns a session; client-only pairs do not meet
 ├── unit/holdings.test.js   # NEW: counting rules, no I/O

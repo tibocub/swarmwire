@@ -19,7 +19,7 @@ code (`serveCollection`, `downloadCollection`). See `AGENTS.md` for the invarian
 | Serve a file in place, download by link, resume, verify every range | exists | - | `test/swarm/transfer.test.js` |
 | Serve and download a folder as one link | exists | - | `test/swarm/collection.test.js` |
 | Partial seeding: a download in progress serves what it holds | exists | - | `test/swarm/partial.test.js` |
-| Application supplies the network connection (any object with `join`, `leave`, a `connection` event) | exists | - | `test/helpers/network.js`, `test/net/real-swarm.test.js` |
+| Application supplies the network connection (any object with `join(topic, opts)` returning a session with `destroy()`, and a `connection` event; Hyperswarm is one) | exists | - | `test/helpers/network.js`, `test/net/real-swarm.test.js` |
 | Peer identity: the remote public key of the connection | exists | - | `test/swarm/transfer.test.js` |
 | Peer activity events, peer count, seeder and leecher counts | exists | - | `test/swarm/peers.test.js` |
 | Folder file-list reader (look-only, in memory), and downloading one listed file | exists | - | `test/swarm/list.test.js` |

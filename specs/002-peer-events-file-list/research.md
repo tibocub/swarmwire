@@ -104,7 +104,7 @@ Checked against the repository on 2026-10-21 unless marked unverified.
 - **Decision**: the reader calls `swarm.join(topic, { server: false, client: true })`. The test
   network's `TestPeer.join(topic, { server = true, client = true } = {})` records the mode, and
   `_discover` only connects a pair that share a topic where at least one side is a server for it.
-- **Leaving**: Hyperswarm's `join` returns a per-caller session (`discovery.session(opts)`); `session.destroy()` leaves only that session, while `swarm.leave(topic)` destroys the discovery for every session on the topic. The reader keeps its session and destroys it, and never calls `swarm.leave`. No reference counting is needed. (Observation, not in scope: `Download.stop` calls `swarm.leave?.(topic)`, which drops other sessions on that topic too.) The harness's `join` returns the same kind of session handle.
+- **Leaving**: Hyperswarm's `join` returns a per-caller session (`discovery.session(opts)`); `session.destroy()` leaves only that session, while `swarm.leave(topic)` destroys the discovery for every session on the topic. The reader keeps its session and destroys it, and never calls `swarm.leave`. No reference counting is needed. (`Download.stop` used to call `swarm.leave?.(topic)`, which dropped other sessions on that topic too. Fixed in the same release: the node now keeps each announce session and ends only its own.) The harness's `join` returns the same kind of session handle.
 - **Test of "does not appear as a provider"**: a third peer doing a lookup on the topic finds only the
   real server, not the reader (FR-011a, scenario 5).
 

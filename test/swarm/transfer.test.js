@@ -223,6 +223,24 @@ test('a download resumes from what is already on disk', async (t) => {
   t.ok(second.received < second.total, 'and did not re-download what it had')
 })
 
+test('stopping a download leaves the topic only for itself', async (t) => {
+  const net = new TestNetwork()
+  const dir = tmpdir(t)
+  const file = writeSample(dir, 'original', 50000)
+
+  const both = node(t, net, 'both')
+  const { link, root } = await both.serve(file) // announcing, as a server
+  const key = b4a.toString(discoveryTopic(root, null), 'hex')
+
+  const download = both.download(link, path.join(dir, 'copy'))
+  await download.stop()
+
+  t.ok(net.peers.get('both').serves(key), 'still announcing what it serves')
+
+  await both.unserve(root)
+  t.absent(net.peers.get('both').topics.has(key), 'and unserving is what ends it')
+})
+
 // ---------------------------------------------------------------------------
 
 function node (t, net, name) {

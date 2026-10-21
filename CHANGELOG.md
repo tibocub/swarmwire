@@ -13,6 +13,8 @@
 - `downloadCollection` now reads the list through `readList`'s code. It behaves as before.
 - Fixed: a peer's old connection closing no longer removes the peer when a newer connection
   from the same key replaced it.
+- Fixed: stopping a download, or unserving content, now leaves only its own announce session.
+  It used to leave the whole topic, which also dropped other users of it.
 - `docs/contract.md`: peer activity and the file-list reader move from planned to *exists*;
   hints and admission are now planned for feature 003.
 

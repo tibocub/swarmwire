@@ -51,5 +51,6 @@ and file roots). Skipped for roots with an active `Download`.
 ## Listing
 
 A thenable with `stop()`, like `Download`. States: waiting (no peer has the list) -> done (resolves to
-the folder file list) | failed (not a folder link; stopped). A peer serving an invalid list is
-dropped for that read and the Listing keeps waiting.
+the folder file list) | failed (not a folder link; stopped). Bytes that do not match the address
+are refused and the Listing keeps waiting for another peer; a list that matches but is unsafe or
+too large fails the read. `stop()` resolves it to `undefined`.
