@@ -108,6 +108,22 @@ test('progress is reported file by file', async (t) => {
   t.alike(seen, ['a.txt', 'b.txt', 'c.txt'])
 })
 
+test('byte progress covers the whole folder, from nothing to everything', async (t) => {
+  const { net, dir, sender, receiver } = setup(t)
+  const source = folder(dir, 'original', { 'a.bin': 70000, 'b.bin': 100, 'c.bin': 40000 })
+
+  const { link } = await sender.serveCollection(source)
+  const seen = []
+
+  await drive(net, () => receiver.downloadCollection(link, path.join(dir, 'received'), {
+    onprogress: (progress) => seen.push(progress)
+  }))
+
+  t.alike(seen[0], { bytes: 0, total: 110100 }, 'the total is known before the first byte')
+  t.alike(seen.at(-1), { bytes: 110100, total: 110100 })
+  t.ok(seen.every((p, i) => i === 0 || p.bytes >= seen[i - 1].bytes), 'never goes backwards')
+})
+
 // ---------------------------------------------------------------------------
 
 function setup (t) {

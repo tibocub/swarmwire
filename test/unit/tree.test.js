@@ -1,5 +1,5 @@
 import test from 'brittle'
-import { blake3 } from '../../lib/blake3.js'
+import { blake3, bao } from '../../lib/blake3.js'
 import b4a from 'b4a'
 
 import {
@@ -73,6 +73,27 @@ test('a proof is logarithmic, not linear', (t) => {
   const tree = treeOf(sample(300000), DEFAULT_GROUP_LOG) // 19 groups
   t.is(groupCount(300000, DEFAULT_GROUP_LOG), 19)
   t.ok(tree.proof(0).length <= 5, `proof is ${tree.proof(0).length} hashes for 19 groups`)
+})
+
+test('serving a proof costs about log n hashes once the tree has been used', (t) => {
+  const count = 4096
+  const tree = new GroupTree(Array.from({ length: count }, (_, i) => blake3.hash(b4a.from([i & 255, i >> 8]))), {
+    size: count * groupLength(), groupLog: DEFAULT_GROUP_LOG
+  })
+
+  const original = bao.parentCV
+  let calls = 0
+  bao.parentCV = (...args) => { calls++; return original(...args) }
+
+  try {
+    tree.proof(0) // may do the work of filling in what it needs
+    calls = 0
+    for (let i = 1; i <= 50; i++) tree.proof(i * 80)
+  } finally {
+    bao.parentCV = original
+  }
+
+  t.ok(calls / 50 < 500, `${calls / 50} parent hashes per proof (4095 without remembering any)`)
 })
 
 test('a single group needs no proof at all', (t) => {

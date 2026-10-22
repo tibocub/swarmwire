@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **Serving a large file is no longer slow.** Every proof recomputed the hash of every subtree from
+  the leaves, so each group served cost time proportional to the file's size: a 300 MB file
+  was served at under 1 MB/s with the sender's processor full. Larger subtrees are now
+  remembered, and a proof costs about a dozen hashes. The same 300 MB transfer on one machine
+  went from over 90 s to 22 s.
+- `downloadCollection(link, dir, { onprogress })` reports `{ bytes, total }` for the whole folder as
+  bytes arrive, first with `bytes: 0` once the list is known.
+
 ## 0.3.0
 
 - **Downloads no longer proceed roughly in file order.** A download scans for wanted groups from
