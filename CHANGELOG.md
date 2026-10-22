@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
 - **Serving a large file is no longer slow.** Every proof recomputed the hash of every subtree from
   the leaves, so each group served cost time proportional to the file's size: a 300 MB file
@@ -9,6 +9,8 @@
   went from over 90 s to 22 s.
 - `downloadCollection(link, dir, { onprogress })` reports `{ bytes, total }` for the whole folder as
   bytes arrive, first with `bytes: 0` once the list is known.
+- Not shipped: `npm run bench:sim` gained a `hotswap` strategy and `--slow` peers, and
+  `docs/research/p2p-landscape.md` records what other peer-to-peer systems do.
 
 ## 0.3.0
 

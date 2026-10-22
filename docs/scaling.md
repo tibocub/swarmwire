@@ -90,6 +90,29 @@ not worse by more than 2%, and the gain larger than the spread across seeds.
   like a leecher in `counts()`, because it advertises less than it holds, which would make
   "peers with all of it" wrong in `swarmwire-cli`. A gain under the bar does not pay for that.
 
+## Uneven uplinks and hotswap
+
+Added after the verdicts above, because they named uneven bandwidth as the thing that could
+change them. `hotswap` is Hypercore's rule: once everything a peer is missing has been asked for,
+ask again for the least-asked groups, up to 3 copies each. `--slow 0.2` makes a fifth of the
+downloaders serve one tick in eight (`--slowEvery`). 1 seeder, 64 neighbours, medians over 3
+seeds, in ticks:
+
+| | strategy | median | last | wasted |
+|---|---|---|---|---|
+| all peers equal (300) | random-ties (built) | 814 | 848 | 67 |
+| | endgame | 798 | 843 | 28,626 |
+| | hotswap | 840 | 915 | 57,416 |
+| 20% slow (200) | random-ties (built) | 1307 | 2460 | 10,457 |
+| | endgame | 1015 | 1202 | 59,503 |
+| | hotswap | 987 | 1162 | 39,253 |
+
+With equal peers neither helps and hotswap is about 3% slower. With slow peers the last
+downloader waits on a group stuck in a slow peer's queue, and both cut that roughly in half.
+**Not built**, because the 20% and the factor of 8 are assumptions, not measurements. If it is
+built, hotswap is the one to build, ideally only for requests already outstanding for a long
+time (not simulated).
+
 ## What would change these verdicts
 
 A model with real choking and uneven bandwidth, a larger file, peers that leave, a late joiner, or

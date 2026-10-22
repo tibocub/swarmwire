@@ -6,12 +6,13 @@
  * row differs from it by one idea.
  */
 
-const base = { legacy: false, from: 'random', ties: 'random', seeder: 'serve', endgame: null }
+const base = { legacy: false, from: 'random', ties: 'random', seeder: 'serve', endgame: null, hotswap: null }
 
 export const STRATEGIES = {
   'file-order': { ...base, legacy: true, from: 'start', ties: 'file' },
   'random-ties': { ...base },
   'superseed-reveal': { ...base, seeder: 'reveal' },
   'superseed-reject': { ...base, seeder: 'reject' },
-  endgame: { ...base, endgame: { last: 16 } }
+  endgame: { ...base, endgame: { last: 16 } },
+  hotswap: { ...base, hotswap: { copies: 3 } } // Hypercore's: when everything missing is asked for, ask for the least-asked again, up to 3 copies
 }

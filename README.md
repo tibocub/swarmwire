@@ -55,8 +55,9 @@ The command-line tool built on this library is moving to its own package,
 
 > Status: **pre-alpha.** Transfers work end to end, over a real swarm, with resume,
 > verification, request timeouts, partial seeding, rarest-first selection and an adaptive
-> request window. Behaviour with very many peers is not measured yet. See
-> [docs/roadmap.md](docs/roadmap.md) for what is built and what is next.
+> request window. Behaviour with very many peers is only modelled, not measured. It is enough
+> for a command-line tool; it is not yet the content-addressing layer SwarmFS needs (admission,
+> peer hints, no public discovery). [docs/roadmap.md](docs/roadmap.md) says where it stands.
 
 ## What it is
 
@@ -110,7 +111,9 @@ Anything that needs a name, a directory or a user belongs upstairs. See
 |------------------------------------|-----------------------------------------------------------------------------------------------|
 | [docs/format.md](docs/format.md)   | Addressing, verification, links, topic derivation — the parts that must never change casually |
 | [docs/contract.md](docs/contract.md) | What applications can rely on, supply and must not expect                                  |
-| [docs/roadmap.md](docs/roadmap.md) | Vision and milestones                                                                         |
+| [docs/roadmap.md](docs/roadmap.md) | Vision, milestones, and where things stand                                                    |
+| [docs/scaling.md](docs/scaling.md) | Piece selection in large swarms, simulated                                                    |
+| [docs/research/p2p-landscape.md](docs/research/p2p-landscape.md) | What other P2P systems do, and what is worth taking                  |
 | [AGENTS.md](AGENTS.md)             | How to work in this repo                                                                      |
 
 ## License

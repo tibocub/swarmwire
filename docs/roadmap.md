@@ -25,6 +25,26 @@ swarmwire get <link>      # downloads it, resumable, from every peer that has it
 
 No `add` step, no topic to join, no daemon required, no copy of the file anywhere.
 
+## Where this stands (2026-10-22)
+
+- **Good enough for a command-line tool**: `swarmwire-cli` sends and fetches a file or folder by
+  link, over a real swarm, and keeps seeding.
+- **Not yet the layer SwarmFS needs.** What is missing is listed under "Next" and "M4" below:
+  an admission decision (which peer may fetch which root), peer hints (an application telling
+  swarmwire who holds what), a way to switch off swarmwire's own public discovery, and
+  priority or range reads for a filesystem. Nothing was built for these because the SwarmFS side
+  (hypergraph) is being rewritten; read it first, then build from what it needs.
+- **Unmerged branch `file-topics`**: a big file inside a folder is also announced and looked up
+  on its own topic (`fileTopicMin`, at most 64). It works and is measured
+  (`docs/discovery.md` on that branch), but it makes the library join public hash topics, which
+  SwarmFS may not want. Decide after the admission and discovery questions are settled.
+- **Not built, with numbers**: endgame, super-seeding, hotswap ([scaling.md](scaling.md)); a
+  persistent hash cache (every `send` rehashes, about 70 MB/s); a fast BLAKE3.
+- **Observed, not explained**: a first contact sometimes takes 6 to 13 s. Hyperswarm retries a
+  never-connected peer after about 5 s, which is the likely cause
+  ([research](research/p2p-landscape.md), section 10).
+- **Ideas from other systems**, with who each belongs to: [research/p2p-landscape.md](research/p2p-landscape.md).
+
 ## Milestones
 
 ### M0 — Foundations ✅

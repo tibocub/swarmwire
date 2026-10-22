@@ -28,6 +28,8 @@ export const DEFAULTS = {
   latency: 4,
   groups: 512,
   window: 4, // per neighbour: the library's floor, where its adaptive window settles when each neighbour gets a small share of the uplink
+  slow: 0, // share of downloaders whose uplink is slowed
+  slowEvery: 8, // a slow peer serves one tick in this many
   timeout: 256, // ticks before an unanswered request is given up on and asked of someone else
   seed: 1,
   strategy: 'random-ties'
@@ -141,6 +143,7 @@ export function simulate (options = {}) {
   // -- serving ---------------------------------------------------------------------------
 
   const serve = (t, n) => {
+    if (n.slow && t % s.slowEvery !== 0) return
     for (let k = n.seed ? s.seederUplink : s.uplink; k > 0 && n.queue.length > 0; k--) {
       const { from, g } = n.queue.shift()
       const p = peers[from]
@@ -186,16 +189,19 @@ export function simulate (options = {}) {
 
     const missing = G - p.count
     const endgame = strategy.endgame && missing <= strategy.endgame.last
-    if (!endgame && p.claimed.size >= missing) return false // everything missing is already asked for
+    const spare = p.claimed.size >= missing // everything missing is already asked for
+    if (spare && !endgame && !strategy.hotswap) return false
+    const copies = strategy.hotswap?.copies
     const pool = strategy.legacy ? legacyPool(p, n) : candidates({
       count: G,
       has: (g) => p.has[g] === 1,
       peerHas: (g) => offers(p, n, g),
-      claimed: endgame ? (g) => out.has(g) : (g) => p.claimed.has(g),
+      claimed: endgame ? (g) => out.has(g) : spare && copies ? (g) => out.has(g) || p.claimed.get(g) >= copies : (g) => p.claimed.has(g),
       from: strategy.from === 'random' ? Math.floor(random() * G) : 0
     })
 
     const wanted = rank(pool, p.availability, strategy.ties === 'random' ? random : () => 0)
+    if (spare && copies) wanted.sort((a, b) => (p.claimed.get(a) ?? 0) - (p.claimed.get(b) ?? 0)) // least asked first
 
     for (const g of wanted.slice(0, free)) {
       out.add(g)
@@ -300,6 +306,7 @@ function build (s, random) {
       shown: new Map()
     }
     if (seed) p.has.fill(1)
+    if (!seed && s.slow > 0) p.slow = random() < s.slow
     peers.push(p)
   }
 
