@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- `serveCollection(null, { name, files: [{ path, from }] })` serves a folder from an explicit list of
+  files instead of walking a directory. `from` may be an `fd:N` descriptor, so a folder an Android
+  app can only reach file by file can be shared.
+(0.4.1 added `fd:N` paths for single files.)
+
 ## 0.4.0
 
 - **Serving a large file is no longer slow.** Every proof recomputed the hash of every subtree from
