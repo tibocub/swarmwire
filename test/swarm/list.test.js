@@ -45,6 +45,19 @@ test('a folder\'s list is read from its link alone', async (t) => {
   t.alike([listing(dir), fs.readdirSync(process.cwd()).sort()], before, 'nothing was written')
 })
 
+test('a folder can be served from an explicit list of files', async (t) => {
+  const { net, dir, sender, receiver } = setup(t)
+  const source = folder(dir, 'original', { 'a.txt': 400, 'photos/one.jpg': 70000 })
+  const { link, files } = await sender.serveCollection(null, {
+    name: 'original',
+    files: [{ path: 'a.txt', from: path.join(source, 'a.txt') }, { path: 'photos/one.jpg', from: path.join(source, 'photos/one.jpg') }]
+  })
+  t.is(files, 2)
+
+  const result = await drive(net, () => receiver.readList(link))
+  t.alike(result.files.map(({ path, size }) => [path, size]), [['a.txt', 400], ['photos/one.jpg', 70000]])
+})
+
 test('a link to a single file is not a folder', async (t) => {
   const { dir, sender, receiver } = setup(t)
   const file = path.join(dir, 'one.bin')
