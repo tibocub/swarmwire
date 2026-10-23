@@ -125,3 +125,17 @@ test('opening something that is not there fails cleanly', async (t) => {
   const dir = tmpdir(t)
   await t.exception(ContentSource.open(`${dir}/nope.bin`), /no such file|ENOENT/i)
 })
+
+test('an open descriptor is served like a path, and left open', async (t) => {
+  const dir = tmpdir(t)
+  const file = writeSample(dir, 'picked.bin', 70000)
+  const fd = fs.openSync(file, 'r')
+  t.teardown(() => { try { fs.closeSync(fd) } catch {} })
+
+  const source = await ContentSource.open(`fd:${fd}`)
+  t.is(source.root, blake3.hashHex(read(file)), 'same root as the path')
+  t.is(source.size, 70000)
+
+  await source.close()
+  t.is(fs.fstatSync(fd).size, 70000, 'the descriptor is still the caller\'s')
+})
