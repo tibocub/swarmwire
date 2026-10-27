@@ -24,8 +24,12 @@ code (`serveCollection`, `downloadCollection`). See `AGENTS.md` for the invarian
 | Peer activity events, peer count, seeder and leecher counts | exists | - | `test/swarm/peers.test.js` |
 | Folder file-list reader (look-only, in memory), and downloading one listed file | exists | - | `test/swarm/list.test.js` |
 | Download order spread by random choice (no two newcomers ask for the same thing first) | exists | - | `test/swarm/spread.test.js` |
-| Peer hints (preferred peers, priorities) | planned | 004 | - |
-| Admission decisions | planned | 004 | - |
+| No announce of its own: with a network whose `join` goes nowhere, serving, downloading and folders use only the connections the application hands over | exists | - | `test/swarm/on-demand.test.js` |
+| Serve on demand: `resolve(root)` maps a root to a path when a peer asks; served only if the file still has that root; a bounded number kept open | exists | - | `test/swarm/on-demand.test.js` |
+| Download to `<path>.part`, renamed into place once verified | exists | - | `test/swarm/on-demand.test.js` |
+| A download says `stalled` as soon as every connected peer said it does not hold the content | exists | - | `test/swarm/timeout.test.js` |
+| Peer hints (preferred peers, priorities) | planned | 005 | - |
+| Admission decisions | planned | 005 | - |
 
 ## 3. Rules the application can rely on
 
@@ -96,11 +100,45 @@ whole-folder download refuses; nothing is repaired). `downloadFile(link, file, o
 downloads one listed file, using only the folder's link and the list entry, and does not announce
 it separately. Which files, and any interface for choosing, belong to the application.
 
-### 3.6 The shared connection
+### 3.6 Serving on demand
+
+`new Swarmwire({ resolve, maxOpen = 64 })`. `resolve(rootHex)` returns a path, or null, and may be
+async. It is called when a connected peer wants a root that nothing is serving and no download in
+progress can answer; the file is then opened and hashed, and served **only if it hashes to that
+root**. A changed file, a null, and a resolver that throws are all answered exactly as content
+swarmwire does not hold. At most `maxOpen` resolved files stay open; the least recently used is
+closed and reopened through `resolve` if asked for again. Nothing is kept for a root nobody asked
+for. With `resolve` set, a finished download is kept open the same way rather than for good.
+
+Hashes are remembered per path, size and modification time (to the millisecond) for the life of
+the process, so a file rewritten with the same size within the same millisecond is not noticed,
+and neither is a file changed while it is open.
+
+### 3.7 Download to a temporary name
+
+`new Swarmwire({ temporary: true })`, or `download(link, path, { temporary: true })`, writes to
+`<path>.part` with the resume record beside it, and renames it to `<path>` once every group is
+verified, replacing whatever is there. Nothing is written at `<path>` before then. Off by default.
+
+### 3.8 A fetch that can end
+
+A `Download` never fails for lack of peers; it emits `stalled` (`{ have, total }`) when nobody it
+can ask holds anything it needs, including as soon as every peer it asked said it holds none of
+it. Whether to wait or `stop()` is the application's choice. `stop()` keeps what was verified and
+its resume record; the same `download()` later resumes from it.
+
+### 3.9 The shared connection
 
 The application creates and destroys the swarm, owns its keypair, and may use the same connections
 for other protocols. swarmwire attaches to the `connection` event and leaves the connection alone
 when it is destroyed.
+
+swarmwire calls `join(topic, opts)` when serving (`serve`, `serveCollection`), downloading by link
+(`download`, `downloadCollection`) and reading a folder list (`readList`), and uses the result
+only if it has `flushed()` / `destroy()`. An application whose peers meet elsewhere (one topic per
+workspace) supplies a network whose `join` does nothing and whose `connection` event emits the
+streams it chooses: swarmwire then announces and looks up nothing, and talks only to those
+connections.
 
 ## 4. What swarmwire will not do
 
@@ -141,7 +179,8 @@ DEFAULT_GROUP_LOG
 
 **Stable** (changes bump the version and are in the changelog): `Swarmwire`
 (`serve`, `serveCollection`, `download`, `downloadCollection`, `readList`, `downloadFile`,
-`unserve`, `destroy`, `peerCount`, `counts`; events `peer-connected`, `peer-disconnected`),
+`unserve`, `destroy`, `peerCount`, `counts`; constructor options `swarm`, `resolve`, `maxOpen`,
+`temporary`; `download` option `temporary`; events `peer-connected`, `peer-disconnected`),
 `Download` (awaitable; events `progress`, `rejected`, `timeout`, `stalled`), `rootOf`,
 `formatLink`, `parseLink`, `SCHEME`.
 

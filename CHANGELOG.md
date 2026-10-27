@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.6.0
+
+- **Serve on demand.** `new Swarmwire({ resolve, maxOpen })`: `resolve(root)` (may be async) maps a
+  root nobody is serving to a path when a peer asks for it. The file is opened and hashed then and
+  served only if it still has that root; otherwise it is answered as not held. At most `maxOpen`
+  (64) such files stay open. A device can host thousands of files without opening or announcing
+  any of them.
+- **No announce of its own**, documented and proved: given a network whose `join` goes nowhere,
+  nothing swarmwire does joins a topic; it talks only to the connections it is handed.
+- **Download to `<path>.part`** with `temporary: true` (constructor or per `download`), renamed
+  into place once verified. Off by default.
+- A download now emits `stalled` as soon as every peer it asked said it does not hold the
+  content, instead of only after timeouts.
+- A read failing on a source closed meanwhile is answered with a refusal, not an unhandled
+  rejection.
+- `docs/contract.md`: admission and peer hints are now planned for feature 005.
+
 ## 0.5.0
 
 - `serveCollection(null, { name, files: [{ path, from }] })` serves a folder from an explicit list of

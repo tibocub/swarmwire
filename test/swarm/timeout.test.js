@@ -108,6 +108,32 @@ test('no timer is left waiting once a download ends', async (t) => {
   t.is(clock.waiting, 0)
 })
 
+test('when every connected peer says it does not hold it, the download says stalled at once', async (t) => {
+  const net = new TestNetwork()
+  const clock = new TestClock()
+  const dir = tmpdir(t)
+  const file = writeSample(dir, 'original', 50000)
+  const other = writeSample(dir, 'other', 40000) // samples of one size are the same bytes
+
+  // Two peers on the topic, neither holding the content: one serves something else there.
+  const link = await linkOnly(t, file)
+  const { root, secret } = parseLink(link)
+  for (const name of ['a', 'b']) {
+    const sw = node(t, net, clock, name)
+    await sw.serve(other)
+    net.peers.get(name).join(discoveryTopic(root, secret))
+  }
+
+  const download = node(t, net, clock, 'leecher').download(link, path.join(dir, 'copy'))
+  let stalled = 0
+  download.on('stalled', () => stalled++)
+  await until(net, () => stalled > 0)
+
+  t.is(clock.now, 0, 'without waiting for any timeout')
+  t.is(download.have, 0)
+  await download.stop()
+})
+
 // ---------------------------------------------------------------------------
 
 function node (t, net, clock, name) {

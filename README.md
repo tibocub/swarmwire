@@ -50,14 +50,21 @@ $ node examples/send-get.js get 'swarmwire://10db63…' ./holidays.mp4
 ```
 
 A folder goes the same way, as one link: `serveCollection` and `downloadCollection`.
+
+To host everything a device holds without announcing or opening any of it, give the node a
+lookup instead of calling `serve`: `new Swarmwire({ swarm, resolve: (root) => pathOrNull })`.
+Files are opened when a peer asks, and served only if they still hash to that root. If your
+application already connects its peers, hand swarmwire a network whose `join` does nothing and
+it announces nothing. `temporary: true` downloads to `<path>.part` and renames at the end.
+See [docs/contract.md](docs/contract.md).
 The command-line tool built on this library is moving to its own package,
 [`swarmwire-cli`](https://github.com/tibocub/swarmwire-cli) ([npm](https://www.npmjs.com/package/swarmwire-cli)).
 
 > Status: **pre-alpha.** Transfers work end to end, over a real swarm, with resume,
 > verification, request timeouts, partial seeding, rarest-first selection and an adaptive
 > request window. Behaviour with very many peers is only modelled, not measured. It is enough
-> for a command-line tool; it is not yet the content-addressing layer SwarmFS needs (admission,
-> peer hints, no public discovery). [docs/roadmap.md](docs/roadmap.md) says where it stands.
+> for a command-line tool, and it can serve SwarmFS on demand with no public discovery;
+> admission and peer hints are still to come. [docs/roadmap.md](docs/roadmap.md) says where it stands.
 
 
 ## What it is
