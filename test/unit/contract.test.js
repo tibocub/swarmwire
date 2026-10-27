@@ -6,7 +6,8 @@ import b4a from 'b4a'
 import * as api from '../../index.js'
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url))
-const contract = b4a.toString(fs.readFileSync(ROOT + 'docs/contract.md'))
+// CRLF on Windows checkouts (core.autocrlf): parse it as LF
+const contract = b4a.toString(fs.readFileSync(ROOT + 'docs/contract.md')).replace(/\r\n/g, '\n')
 
 /** Rows of the capabilities table: {capability, status, delivered, proof: [paths]}. */
 function capabilities () {
