@@ -145,6 +145,6 @@ Pre-alpha. See [docs/roadmap.md](docs/roadmap.md) for what is built and what is 
 
 `lib/swarmwire.js` is past its size guideline: new behaviour goes in its own file and the node
 only calls it. Peer counts and the watch set live in `lib/holdings.js`, the folder list reader in
-`lib/listing.js`.
+`lib/listing.js`, serving on demand in `lib/on-demand.js`.
 
 The command-line tool lives in its own repository, [`swarmwire-cli`](https://github.com/tibocub/swarmwire-cli); this repository is the library and has no `bin`.
