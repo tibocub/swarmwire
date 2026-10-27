@@ -173,6 +173,52 @@ test('a temporary download never leaves a half file at the target, and resumes f
   t.is(fetcher.onDemand?.open.get(second.root)?.path ?? fetcher.serving.get(second.root)?.path, out, 'served from where it landed')
 })
 
+test('a file changed in place while served, same size and mtime, is never sent: not held', async (t) => {
+  for (const how of ['resolve', 'serve']) {
+    const { net, dir, make } = setup(t)
+    const file = writeSample(dir, 'held', 300000)
+    const link = await linkTo(t, file)
+    const { mtime } = fs.statSync(file)
+
+    const holder = make('holder', how === 'resolve' ? { resolve: () => file } : {})
+    if (how === 'serve') await holder.serve(file)
+    const fetcher = make('fetcher', { window: 2 })
+
+    const download = fetcher.download(link, path.join(dir, 'copy'))
+    for (let i = 0; i < 2000 && !(download.have > 0 && download.have < download.total); i++) await net.step()
+    t.ok(download.have > 0 && download.have < download.total, `${how}: mid-way`)
+
+    fs.writeFileSync(file, b4a.alloc(300000, 1)) // the open file rewritten under the holder
+    fs.utimesSync(file, mtime, mtime) // and its mtime put back: no stat can tell
+
+    let stalled = false
+    download.on('stalled', () => { stalled = true })
+    await settleUntil(net, () => stalled)
+
+    t.is(download.rejected, 0, `${how}: not one wrong byte was sent`)
+    t.ok(download.have < download.total, `${how}: and the fetch learned nobody holds the rest`)
+    t.absent(holder.serving.has(download.root) || holder.onDemand?.open.has(download.root), `${how}: no longer served`)
+  }
+})
+
+test('a file rewritten with the same size and mtime after it was hashed is answered as not held', async (t) => {
+  const { net, dir, make } = setup(t)
+  const file = writeSample(dir, 'held', 40000)
+  const link = await linkTo(t, file) // hashes it, and remembers the hashes by path, size, mtime
+  const { mtime } = fs.statSync(file)
+  fs.writeFileSync(file, b4a.alloc(40000, 1))
+  fs.utimesSync(file, mtime, mtime)
+
+  make('holder', { resolve: () => file })
+  const download = make('fetcher').download(link, path.join(dir, 'copy'))
+  let stalled = false
+  download.on('stalled', () => { stalled = true })
+  await settleUntil(net, () => stalled)
+
+  t.is(download.have, 0)
+  t.is(download.rejected, 0, 'the remembered hashes did not let a wrong byte through')
+})
+
 // ---------------------------------------------------------------------------
 
 /**

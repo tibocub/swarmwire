@@ -3,7 +3,8 @@ import { blake3 } from '../../lib/blake3.js'
 import b4a from 'b4a'
 import fs from 'fs'
 
-import { ContentSource, clearHashCache } from '../../lib/source.js'
+import { ContentSource, clearHashCache, hashCache, hashFile } from '../../lib/source.js'
+import * as api from '../../index.js'
 import { verifyGroup, groupRange, groupLength, DEFAULT_GROUP_LOG } from '../../lib/tree.js'
 import { tmpdir, writeSample, sample, read } from '../helpers/tmp.js'
 
@@ -138,4 +139,34 @@ test('an open descriptor is served like a path, and left open', async (t) => {
 
   await source.close()
   t.is(fs.fstatSync(fd).size, 70000, 'the descriptor is still the caller\'s')
+})
+
+test('hashFile gives the plain BLAKE3 root of a file, and is exported', async (t) => {
+  const dir = tmpdir(t)
+  const file = writeSample(dir, 'big', 300000)
+  const empty = writeSample(dir, 'empty', 0)
+
+  t.is(await hashFile(file), blake3.hashHex(read(file)))
+  t.is(await hashFile(empty), blake3.hashHex(b4a.alloc(0)))
+  t.is(api.hashFile, hashFile)
+  await t.exception(() => hashFile(dir + '/missing'))
+})
+
+test('the hash cache is bounded by bytes, least recently used out first', async (t) => {
+  const dir = tmpdir(t)
+  const files = [1, 2, 3].map((n) => writeSample(dir, 'f' + n, 16 * 1024 * 10)) // 10 groups: 320 bytes of hashes each
+  const limit = hashCache.limit
+  hashCache.limit = 700 // room for two
+  t.teardown(() => { hashCache.limit = limit; clearHashCache() })
+  clearHashCache()
+
+  const open = async (file) => { const s = await ContentSource.open(file); await s.close(); return s.cached }
+
+  t.absent(await open(files[0]))
+  t.absent(await open(files[1]))
+  t.ok(await open(files[0]), 'f1 remembered, and now the most recent')
+  t.absent(await open(files[2]), 'f3 pushes out the least recent: f2')
+  t.ok(hashCache.bytes <= 700, `${hashCache.bytes} bytes held`)
+  t.ok(await open(files[0]), 'f1 kept')
+  t.absent(await open(files[1]), 'f2 was evicted')
 })

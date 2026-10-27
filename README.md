@@ -53,7 +53,9 @@ A folder goes the same way, as one link: `serveCollection` and `downloadCollecti
 
 To host everything a device holds without announcing or opening any of it, give the node a
 lookup instead of calling `serve`: `new Swarmwire({ swarm, resolve: (root) => pathOrNull })`.
-Files are opened when a peer asks, and served only if they still hash to that root. If your
+Files are opened when a peer asks, and served only if they still hash to that root; every
+group is checked again as it is read, so a file edited while shared is answered as not held,
+never with wrong bytes. `hashFile(path)` gives a file's root without loading it. If your
 application already connects its peers, hand swarmwire a network whose `join` does nothing and
 it announces nothing. `temporary: true` downloads to `<path>.part` and renames at the end.
 See [docs/contract.md](docs/contract.md).
@@ -77,7 +79,8 @@ A library that moves bytes between peers:
   touches the destination file, using [bao](https://github.com/oconnor663/bao) verified
   streaming. A lying peer is caught on its first bad range, not at the end of the download.
 - **Served in place.** A shared file is read from its existing path. There is no import step,
-  no second copy, no storage layer that owns your data.
+  no second copy, no storage layer that owns your data. Each range is checked against the
+  root again before it is sent, so a file changed on disk is never served as the old one.
 - **Swarm-shaped.** Many peers per transfer, partial seeders included, like BitTorrent —
   but with Hyperswarm's DHT and holepunching instead of trackers.
 

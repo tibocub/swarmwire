@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.0
+
+- **Verify before send.** Every group read from a file is checked against the root's tree before
+  it is sent. A file changed on disk, even keeping its size and mtime or while open, is answered
+  as not held (the root stops being served; peers that asked are told), never with wrong bytes
+  that would get this node banned. Cost: one BLAKE3 pass over what is served, about 255 → 92
+  MiB/s reading a 256 MiB file, 17 → 13 MiB/s for a loopback transfer.
+- **Bounded hash cache.** Remembered group hashes are evicted least recently used first beyond
+  32 MiB of hashes (about 32 GiB of content).
+- **`hashFile(path)`**, stable: a file's root, read a group at a time.
+- `docs/contract.md`: admission and peer hints move to feature 006.
+
 ## 0.6.0
 
 - **Serve on demand.** `new Swarmwire({ resolve, maxOpen })`: `resolve(root)` (may be async) maps a
