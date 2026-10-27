@@ -177,7 +177,7 @@ Specified next, in this order, each as its own feature under `specs/`:
 6. ✅ (0.6.0) On-demand serving for SwarmFS: `resolve(root)` instead of `serve` per file, a
    bounded set of open files, no topic joined when the application owns the connections,
    downloads to `<path>.part`, and `stalled` once every peer says it holds nothing. Admission
-   and peer hints (item 2) are feature 005. See `specs/004-on-demand-serving/`.
+   and peer hints (item 2) are feature 006. See `specs/004-on-demand-serving/`.
 
 ### M4 — Handover to SwarmFS
 

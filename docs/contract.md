@@ -28,8 +28,10 @@ code (`serveCollection`, `downloadCollection`). See `AGENTS.md` for the invarian
 | Serve on demand: `resolve(root)` maps a root to a path when a peer asks; served only if the file still has that root; a bounded number kept open | exists | - | `test/swarm/on-demand.test.js` |
 | Download to `<path>.part`, renamed into place once verified | exists | - | `test/swarm/on-demand.test.js` |
 | A download says `stalled` as soon as every connected peer said it does not hold the content | exists | - | `test/swarm/timeout.test.js` |
-| Peer hints (preferred peers, priorities) | planned | 005 | - |
-| Admission decisions | planned | 005 | - |
+| Verify before send: a file changed on disk, even keeping its size and mtime or while open, is answered as not held, never with wrong bytes | exists | - | `test/swarm/on-demand.test.js` |
+| `hashFile(path)`: a file's root, read a group at a time | exists | - | `test/fs/source.test.js` |
+| Peer hints (preferred peers, priorities) | planned | 006 | - |
+| Admission decisions | planned | 006 | - |
 
 ## 3. Rules the application can rely on
 
@@ -110,9 +112,15 @@ swarmwire does not hold. At most `maxOpen` resolved files stay open; the least r
 closed and reopened through `resolve` if asked for again. Nothing is kept for a root nobody asked
 for. With `resolve` set, a finished download is kept open the same way rather than for good.
 
-Hashes are remembered per path, size and modification time (to the millisecond) for the life of
-the process, so a file rewritten with the same size within the same millisecond is not noticed,
-and neither is a file changed while it is open.
+Hashes are remembered per path, size and modification time (to the millisecond), least recently
+used first out, up to **32 MiB of hashes** (32 bytes per 16 KiB group: about 32 GiB of content).
+Size and mtime can lie, so every group read from a file is hashed again and checked before it is
+sent, whether the file was served by `serve` or `resolve`. A group that does not match (the file
+was rewritten keeping its size and mtime, or changed while open) is refused, the root stops being
+served and its remembered hashes are forgotten, and every peer that asked for it is told it is not
+held. Wrong bytes are never sent. This costs one BLAKE3 pass over what is served: on a 256 MiB
+file, reading every group went from about 255 to 92 MiB/s, and a loopback transfer (both ends on
+one machine) from about 17 to 13 MiB/s.
 
 ### 3.7 Download to a temporary name
 
@@ -140,6 +148,12 @@ workspace) supplies a network whose `join` does nothing and whose `connection` e
 streams it chooses: swarmwire then announces and looks up nothing, and talks only to those
 connections.
 
+### 3.10 A file's address
+
+`hashFile(path)` resolves to the file's root: its plain BLAKE3 hash in hex, as `b3sum` prints and
+`rootOf` gives for the same bytes. The file is read a group at a time, never whole; the hashes are
+remembered as above, so serving the same unchanged file afterwards does not hash it again.
+
 ## 4. What swarmwire will not do
 
 | Not in swarmwire | Where it lives |
@@ -165,6 +179,7 @@ swarmTopic
 SCHEME
 ContentSource
 MemorySource
+hashFile
 encodeManifest
 decodeManifest
 isSafePath
@@ -181,7 +196,7 @@ DEFAULT_GROUP_LOG
 (`serve`, `serveCollection`, `download`, `downloadCollection`, `readList`, `downloadFile`,
 `unserve`, `destroy`, `peerCount`, `counts`; constructor options `swarm`, `resolve`, `maxOpen`,
 `temporary`; `download` option `temporary`; events `peer-connected`, `peer-disconnected`),
-`Download` (awaitable; events `progress`, `rejected`, `timeout`, `stalled`), `rootOf`,
+`Download` (awaitable; events `progress`, `rejected`, `timeout`, `stalled`), `rootOf`, `hashFile`,
 `formatLink`, `parseLink`, `SCHEME`.
 
 **Exported for tests and advanced use, may change in any 0.x**: everything else.
