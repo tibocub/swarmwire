@@ -9,6 +9,7 @@
 import test from 'brittle'
 import b4a from 'b4a'
 import { Duplex } from 'streamx'
+import Protomux from 'protomux'
 import fs from 'fs'
 import path from 'path'
 
@@ -105,6 +106,29 @@ test('two connections from one peer are one peer', async (t) => {
 
   t.is(sender.peerCount, 0)
   t.alike(events.map((e) => e[0]), ['+', '-'])
+})
+
+test('a stream handed to one side later than the other still connects', async (t) => {
+  // An app that muxes the stream itself (hypergraph's member streams) hands it to each side
+  // at its own moment: the first side's open arrives before the second side is listening.
+  const net = new TestNetwork()
+  const a = new Swarmwire({ swarm: net.peer('a') })
+  const b = new Swarmwire({ swarm: net.peer('b') })
+  t.teardown(() => Promise.all([a.destroy(), b.destroy()]))
+
+  const [sa, sb] = pair()
+  sa.userData = sb.userData = null // like Hyperswarm's streams: Protomux.from keeps one mux per stream
+  Protomux.from(sa)
+  Protomux.from(sb)
+  t.teardown(() => { sa.destroy(); sb.destroy() })
+
+  a._onPeer(sa, { publicKey: b4a.alloc(32, 2) })
+  await settleStreams()
+  b._onPeer(sb, { publicKey: b4a.alloc(32, 1) })
+  await settleStreams()
+
+  t.is(a.peerCount, 1)
+  t.is(b.peerCount, 1)
 })
 
 test('seeders, leechers, and a peer that has said nothing', async (t) => {

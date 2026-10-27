@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Late-handed streams connect.** A connection handed to one side after the other side already
+  opened the channel (an app that muxes the stream itself, e.g. hypergraph's member streams)
+  connected on neither side: Protomux rejected the early open. Now the side whose open was
+  rejected accepts the other's later open.
+
 ## 0.7.0
 
 - **Verify before send.** Every group read from a file is checked against the root's tree before
