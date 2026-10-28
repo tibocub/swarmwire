@@ -8,6 +8,7 @@
 
 import test from 'brittle'
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import b4a from 'b4a'
 
@@ -15,6 +16,7 @@ import { Swarmwire } from '../../lib/swarmwire.js'
 import { ContentSource } from '../../lib/source.js'
 import { formatLink } from '../../lib/address.js'
 import { TestNetwork } from '../helpers/network.js'
+import { TestClock } from '../helpers/clock.js'
 import { tmpdir, writeSample, read, exists } from '../helpers/tmp.js'
 
 const SPACE = b4a.alloc(32, 7) // the one topic the application joins for the whole workspace
@@ -111,6 +113,50 @@ test('only a bounded number of files are kept open, and an evicted one is reopen
   }
 
   t.ok(most <= 2, `at most ${most} files open at once`)
+})
+
+test('a served file is closed once idle, so its folder can be renamed, and reopened when asked again', async (t) => {
+  const { net, dir, make } = setup(t)
+  let folder = path.join(dir, 'album')
+  fs.mkdirSync(folder)
+  writeSample(folder, 'one', 40000)
+  const link = await linkTo(t, path.join(folder, 'one'))
+
+  const clock = new TestClock()
+  const holder = make('holder', { resolve: () => path.join(folder, 'one'), timers: clock })
+  const fetcher = make('fetcher')
+
+  const first = fetcher.download(link, path.join(dir, 'copy'))
+  await settleUntil(net, () => first.complete)
+  await first
+
+  const [root] = holder.onDemand.open.keys()
+  const source = holder.onDemand.open.get(root)
+  let closed = 0
+  const close = source.close.bind(source)
+  source.close = () => { closed++; return close() }
+
+  // On Windows a folder holding an open file cannot be renamed. Elsewhere it can, open or not.
+  if (os.platform() === 'win32') {
+    t.exception(() => fs.renameSync(folder, path.join(dir, 'early')), /EPERM|EBUSY|EACCES/, 'the open file holds its folder')
+  }
+
+  clock.advance(4999)
+  t.is(closed, 0, 'still open just before the idle time')
+  clock.advance(1)
+  t.is(closed, 1, 'closed once idle')
+  t.absent(holder.onDemand.open.has(root))
+
+  const moved = path.join(dir, 'holiday')
+  // the handle closes asynchronously: retry by time, like every other wait here
+  await settleUntil(net, () => { try { fs.renameSync(folder, moved); return true } catch { return false } })
+  folder = moved
+  t.ok(exists(path.join(moved, 'one')), 'the folder was renamed')
+
+  const second = fetcher.download(link, path.join(dir, 'again'))
+  await settleUntil(net, () => second.complete)
+  await second
+  t.alike(read(path.join(dir, 'again')), read(path.join(moved, 'one')), 'reopened through resolve, from where it is now')
 })
 
 test('with a network that never joins, nothing serves, fetches or lists through a topic', async (t) => {

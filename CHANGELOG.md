@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **A served file is closed once idle.** With `resolve`, a file nobody has read for 5 s is closed
+  (never mid-read) and reopened through `resolve` when asked for again. On Windows an open file
+  kept its folder from being renamed, moved or deleted (`EPERM`) for as long as the node ran
+  (SwarmFS S9).
 - **Late-handed streams connect.** A connection handed to one side after the other side already
   opened the channel (an app that muxes the stream itself, e.g. hypergraph's member streams)
   connected on neither side: Protomux rejected the early open. Now the side whose open was
