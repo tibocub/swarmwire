@@ -325,7 +325,8 @@ async function drive (net, operation) {
   const result = operation().finally(() => { done = true })
   result.catch(() => {}) // the caller sees the rejection; this only keeps it from being unhandled
 
-  for (let i = 0; i < 5000 && !done; i++) await net.settle()
+  // By time, not rounds: a round is one event-loop turn, and real disk I/O can outlast thousands.
+  for (const end = Date.now() + 20000; !done && Date.now() < end;) await net.settle()
 
   return result
 }

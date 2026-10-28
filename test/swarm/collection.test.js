@@ -175,7 +175,8 @@ async function drive (net, operation) {
   let done = false
   const result = operation().finally(() => { done = true })
 
-  for (let i = 0; i < 5000 && !done; i++) await net.settle()
+  // By time, not rounds: a round is one event-loop turn, and real disk I/O can outlast thousands.
+  for (const end = Date.now() + 20000; !done && Date.now() < end;) await net.settle()
 
   return result
 }
