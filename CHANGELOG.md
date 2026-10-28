@@ -6,6 +6,10 @@
   opened the channel (an app that muxes the stream itself, e.g. hypergraph's member streams)
   connected on neither side: Protomux rejected the early open. Now the side whose open was
   rejected accepts the other's later open.
+- **A stopped download says nothing more.** Groups still being written when `stop()` was called
+  emitted `progress` and `stalled` afterwards (one per group in flight).
+- Tests: the collection, list and on-demand tests drive the network by time, not by 5000 rounds,
+  which slow disk I/O could outlast (a hang in about half the runs on a busy disk).
 
 ## 0.7.0
 

@@ -241,6 +241,26 @@ test('stopping a download leaves the topic only for itself', async (t) => {
   t.absent(net.peers.get('both').topics.has(key), 'and unserving is what ends it')
 })
 
+test('a stopped download says nothing more', async (t) => {
+  const { net, dir, seeder, leecher, file } = await twoPeers(t, 500000)
+  const { link } = await seeder.serve(file)
+  const download = leecher.download(link, path.join(dir, 'copy'))
+
+  // Groups still being written when it stops must not report progress or stall afterwards.
+  let stopped = null
+  let after = 0
+  const late = () => { if (stopped) after++ }
+  download.on('progress', () => { late(); stopped ??= download.stop() })
+  download.on('stalled', late)
+
+  await settleUntil(net, () => stopped !== null)
+  await stopped
+  seeder.destroy()
+  await net.settle()
+
+  t.is(after, 0)
+})
+
 // ---------------------------------------------------------------------------
 
 function node (t, net, name) {
