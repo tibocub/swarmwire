@@ -152,7 +152,7 @@ test('a temporary download never leaves a half file at the target, and resumes f
   const fetcher = make('fetcher', { temporary: true, window: 2 })
 
   const first = fetcher.download(link, out)
-  for (let i = 0; i < 2000 && !(first.have > 0 && first.have < first.total); i++) await net.step()
+  for (const end = Date.now() + 20000; Date.now() < end && !(first.have > 0 && first.have < first.total);) await net.step()
   t.ok(first.have > 0 && first.have < first.total, 'stopped mid-way')
   t.absent(exists(out), 'nothing at the target while partial')
   t.ok(exists(out + '.part'), 'the bytes are in the .part file')
@@ -251,9 +251,9 @@ async function linkTo (t, file) {
   return formatLink({ root: source.root, size: source.size })
 }
 
-/** Rounds are attempts, not time: opening a just-written file can be slow (virus scanners). */
-async function settleUntil (net, done, { rounds = 20000 } = {}) {
-  for (let i = 0; i < rounds; i++) {
+/** By time, not rounds: opening a just-written file can be slow (virus scanners, a busy disk). */
+async function settleUntil (net, done) {
+  for (const end = Date.now() + 20000; Date.now() < end;) {
     if (done()) return
     await net.settle()
   }

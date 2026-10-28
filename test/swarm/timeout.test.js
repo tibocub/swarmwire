@@ -182,8 +182,9 @@ async function scenario (t, size) {
 }
 
 /** Deliver everything until the condition holds, without touching the clock. */
-async function until (net, done, { rounds = 500 } = {}) {
-  for (let i = 0; i < rounds; i++) {
+async function until (net, done) {
+  // By time, not rounds: a round is one event-loop turn, and real disk I/O can outlast thousands.
+  for (const end = Date.now() + 20000; Date.now() < end;) {
     if (done()) return
     await net.settle()
   }

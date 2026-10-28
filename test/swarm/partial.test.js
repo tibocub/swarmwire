@@ -134,16 +134,17 @@ function node (t, net, name) {
   return sw
 }
 
-async function settleUntil (net, done, { rounds = 2000 } = {}) {
-  for (let i = 0; i < rounds; i++) {
+async function settleUntil (net, done) {
+  // By time, not rounds: a round is one event-loop turn, and real disk I/O can outlast thousands.
+  for (const end = Date.now() + 20000; Date.now() < end;) {
     if (done()) return
     await net.settle()
   }
   throw new Error('condition never held')
 }
 
-async function stepUntil (net, done, { steps = 2000 } = {}) {
-  for (let i = 0; i < steps; i++) {
+async function stepUntil (net, done) {
+  for (const end = Date.now() + 20000; Date.now() < end;) {
     if (done()) return
     await net.step()
   }
