@@ -52,7 +52,9 @@ $ node examples/send-get.js get 'swarmwire://10db63…' ./holidays.mp4
 A folder goes the same way, as one link: `serveCollection` and `downloadCollection`.
 
 To host everything a device holds without announcing or opening any of it, give the node a
-lookup instead of calling `serve`: `new Swarmwire({ swarm, resolve: (root) => pathOrNull })`.
+lookup instead of calling `serve`: `new Swarmwire({ swarm, resolve: (root, peer) => pathOrNull })`.
+`peer` is `{ id, publicKey }`, the peer asking, so you can refuse a file to a peer that should
+not have it; a file open for one peer is never served to another without asking again.
 Files are opened when a peer asks, and served only if they still hash to that root; every
 group is checked again as it is read, so a file edited while shared is answered as not held,
 never with wrong bytes. `hashFile(path)` gives a file's root without loading it. If your

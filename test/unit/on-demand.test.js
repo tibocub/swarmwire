@@ -15,7 +15,8 @@ function fakeSource () {
 }
 
 function make (clock) {
-  return new OnDemand({ resolve: () => null, max: 64, groupLog: 4, timers: clock })
+  // Says yes to everyone; nothing is opened through it, the tests add their sources.
+  return new OnDemand({ resolve: () => 'held', max: 64, groupLog: 4, timers: clock })
 }
 
 test('an unread source is closed after the idle time, and every get pushes it back', async (t) => {
@@ -25,7 +26,7 @@ test('an unread source is closed after the idle time, and every get pushes it ba
   onDemand.add('r', source)
 
   clock.advance(IDLE_CLOSE - 1)
-  await onDemand.get('r')
+  await onDemand.get('r', { id: 'p', publicKey: null })
   clock.advance(IDLE_CLOSE - 1)
   t.is(source.closed, 0, 'a get restarts the countdown')
 

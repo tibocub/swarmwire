@@ -91,6 +91,37 @@ test('a resolver that says null, or throws, means not held', async (t) => {
   }
 })
 
+test('resolve is told which peer asks, and a file open for one peer is not served to another', async (t) => {
+  const { net, dir, make } = setup(t)
+  const file = writeSample(dir, 'held', 40000)
+  const link = await linkTo(t, file)
+
+  const asked = []
+  make('holder', {
+    resolve: (root, peer) => {
+      asked.push(peer)
+      return b4a.equals(peer.publicKey, net.peers.get('alice').publicKey) ? file : null
+    }
+  })
+  const alice = make('alice', { resolve: () => null }) // keeps her copy to herself
+  const bob = make('bob')
+
+  const first = alice.download(link, path.join(dir, 'alice'))
+  await settleUntil(net, () => first.complete)
+  await first
+  t.alike(read(path.join(dir, 'alice')), read(file), 'the allowed peer gets it')
+
+  // Right after, while the holder still has the file open for alice.
+  const second = bob.download(link, path.join(dir, 'bob'))
+  let stalled = false
+  second.on('stalled', () => { stalled = true })
+  await settleUntil(net, () => stalled)
+
+  t.is(second.have, 0, 'the refused peer gets nothing')
+  t.ok(asked.some((peer) => b4a.equals(peer.publicKey, net.peers.get('bob').publicKey)), 'resolve was asked for bob')
+  t.is(typeof asked[0].id, 'string', 'with the id peer-connected gave')
+})
+
 test('only a bounded number of files are kept open, and an evicted one is reopened on demand', async (t) => {
   const { net, dir, make } = setup(t)
   const files = [1, 2, 3].map((n) => writeSample(dir, 'f' + n, 30000 + n))

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **`resolve(root, peer)` is told who asks** (SwarmFS S10). `peer` is `{ id, publicKey }`. A file
+  open for one peer is no longer served to another peer without asking `resolve` for that one:
+  before, anyone connected could fetch any file the node had open, or had just downloaded, by
+  its hash. A `resolve` that ignores `peer` works as before.
 - **A served file is closed once idle.** With `resolve`, a file nobody has read for 5 s is closed
   (never mid-read) and reopened through `resolve` when asked for again. On Windows an open file
   kept its folder from being renamed, moved or deleted (`EPERM`) for as long as the node ran

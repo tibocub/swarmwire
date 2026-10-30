@@ -25,7 +25,7 @@ code (`serveCollection`, `downloadCollection`). See `AGENTS.md` for the invarian
 | Folder file-list reader (look-only, in memory), and downloading one listed file | exists | - | `test/swarm/list.test.js` |
 | Download order spread by random choice (no two newcomers ask for the same thing first) | exists | - | `test/swarm/spread.test.js` |
 | No announce of its own: with a network whose `join` goes nowhere, serving, downloading and folders use only the connections the application hands over | exists | - | `test/swarm/on-demand.test.js` |
-| Serve on demand: `resolve(root)` maps a root to a path when a peer asks; served only if the file still has that root; a bounded number kept open, each closed after 5 s unread | exists | - | `test/swarm/on-demand.test.js`, `test/unit/on-demand.test.js` |
+| Serve on demand: `resolve(root, peer)` maps a root to a path when a peer asks, told which peer; served only if the file still has that root; a bounded number kept open, each closed after 5 s unread | exists | - | `test/swarm/on-demand.test.js`, `test/unit/on-demand.test.js` |
 | Download to `<path>.part`, renamed into place once verified | exists | - | `test/swarm/on-demand.test.js` |
 | A download says `stalled` as soon as every connected peer said it does not hold the content | exists | - | `test/swarm/timeout.test.js` |
 | Verify before send: a file changed on disk, even keeping its size and mtime or while open, is answered as not held, never with wrong bytes | exists | - | `test/swarm/on-demand.test.js` |
@@ -104,16 +104,21 @@ it separately. Which files, and any interface for choosing, belong to the applic
 
 ### 3.6 Serving on demand
 
-`new Swarmwire({ resolve, maxOpen = 64 })`. `resolve(rootHex)` returns a path, or null, and may be
-async. It is called when a connected peer wants a root that nothing is serving and no download in
-progress can answer; the file is then opened and hashed, and served **only if it hashes to that
-root**. A changed file, a null, and a resolver that throws are all answered exactly as content
+`new Swarmwire({ resolve, maxOpen = 64 })`. `resolve(rootHex, peer)` returns a path, or null, and
+may be async. It is called when a connected peer wants a root that nothing is serving and no
+download in progress can answer. `peer` is `{ id, publicKey }`: `id` as in `peer-connected`,
+`publicKey` the remote key the swarm gave at `connection` (null if it gave none), the same object
+for the whole connection. An open file is shared, but served to a peer **only after `resolve`
+said yes for that peer** while it was open: answering one peer never answers another. A resolver
+that ignores `peer` works as before; it is just asked once per peer. The file is then opened and
+hashed, and served **only if it hashes to that root**. A changed file, a null, and a resolver that throws are all answered exactly as content
 swarmwire does not hold. At most `maxOpen` resolved files stay open; the least recently used is
 closed and reopened through `resolve` if asked for again. A resolved file nobody has read for
 **5 s** is closed too, never during a read, and reopened (and checked against its root) the same
 way: on Windows an open file keeps its folder from being renamed, moved or deleted. Nothing is kept
 for a root nobody asked for. With `resolve` set, a finished download is kept open the same way
-rather than for good.
+rather than for good, and served through `resolve` like any other file. `serve`d content and
+downloads in progress are served to any peer that asks.
 
 Hashes are remembered per path, size and modification time (to the millisecond), least recently
 used first out, up to **32 MiB of hashes** (32 bytes per 16 KiB group: about 32 GiB of content).
