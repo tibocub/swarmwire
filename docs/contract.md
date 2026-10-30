@@ -25,7 +25,7 @@ code (`serveCollection`, `downloadCollection`). See `AGENTS.md` for the invarian
 | Folder file-list reader (look-only, in memory), and downloading one listed file | exists | - | `test/swarm/list.test.js` |
 | Download order spread by random choice (no two newcomers ask for the same thing first) | exists | - | `test/swarm/spread.test.js` |
 | No announce of its own: with a network whose `join` goes nowhere, serving, downloading and folders use only the connections the application hands over | exists | - | `test/swarm/on-demand.test.js` |
-| Serve on demand: `resolve(root, peer)` maps a root to a path when a peer asks, told which peer; served only if the file still has that root; a bounded number kept open, each closed after 5 s unread | exists | - | `test/swarm/on-demand.test.js`, `test/unit/on-demand.test.js` |
+| Serve on demand: `resolve(root, peer)` maps a root to a path when a peer asks, told which peer; `allowed(root, peer)` gates downloads in progress; served only if the file still has that root; a bounded number kept open, each closed after 5 s unread | exists | - | `test/swarm/on-demand.test.js`, `test/unit/on-demand.test.js` |
 | Download to `<path>.part`, renamed into place once verified | exists | - | `test/swarm/on-demand.test.js` |
 | A download says `stalled` as soon as every connected peer said it does not hold the content | exists | - | `test/swarm/timeout.test.js` |
 | Verify before send: a file changed on disk, even keeping its size and mtime or while open, is answered as not held, never with wrong bytes | exists | - | `test/swarm/on-demand.test.js` |
@@ -117,8 +117,19 @@ closed and reopened through `resolve` if asked for again. A resolved file nobody
 **5 s** is closed too, never during a read, and reopened (and checked against its root) the same
 way: on Windows an open file keeps its folder from being renamed, moved or deleted. Nothing is kept
 for a root nobody asked for. With `resolve` set, a finished download is kept open the same way
-rather than for good, and served through `resolve` like any other file. `serve`d content and
-downloads in progress are served to any peer that asks.
+rather than for good, and served through `resolve` like any other file.
+
+A download still in progress serves what it has verified (that is what lets peers swarm a file
+they are all fetching), but `resolve` cannot answer for it: the app has not recorded the file as
+held yet. `new Swarmwire({ allowed })`: `allowed(rootHex, peer)` (may be async, same `peer`) is
+asked before a download in progress is served to a peer; anything but a truthy answer, a throw
+included, is a refusal. Without `allowed` a download in progress serves any peer, as before.
+`serve`d content is served to any peer that asks.
+
+**Grants last as long as the connection.** A yes from `resolve` (while the file is open) or from
+`allowed` is remembered for that connection. A peer the app stops trusting, say a member removed
+from a space, can still fetch the roots it was already granted until it disconnects; it is asked
+about anew on its next connection.
 
 Hashes are remembered per path, size and modification time (to the millisecond), least recently
 used first out, up to **32 MiB of hashes** (32 bytes per 16 KiB group: about 32 GiB of content).

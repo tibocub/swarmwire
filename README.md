@@ -55,6 +55,8 @@ To host everything a device holds without announcing or opening any of it, give 
 lookup instead of calling `serve`: `new Swarmwire({ swarm, resolve: (root, peer) => pathOrNull })`.
 `peer` is `{ id, publicKey }`, the peer asking, so you can refuse a file to a peer that should
 not have it; a file open for one peer is never served to another without asking again.
+Pass `allowed: (root, peer) => boolean` too to decide who may fetch from a download still in
+progress (`resolve` cannot answer for a file not yet held).
 Files are opened when a peer asks, and served only if they still hash to that root; every
 group is checked again as it is read, so a file edited while shared is answered as not held,
 never with wrong bytes. `hashFile(path)` gives a file's root without loading it. If your

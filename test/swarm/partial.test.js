@@ -8,6 +8,7 @@
 
 import test from 'brittle'
 import path from 'path'
+import b4a from 'b4a'
 
 import { Swarmwire } from '../../lib/swarmwire.js'
 import { TestNetwork } from '../helpers/network.js'
@@ -64,6 +65,38 @@ test('a half-finished download serves the groups it can prove', async (t) => {
   t.ok(second.have > 0, `fetched ${second.have} groups from a peer that is itself incomplete`)
   t.ok(second.have <= partial.have, 'and never more than that peer actually holds')
   t.absent(second.complete, 'it cannot finish: nobody in the swarm has the rest')
+})
+
+test('a half-finished download serves only the peers allowed() says yes to', async (t) => {
+  const net = new TestNetwork()
+  const dir = tmpdir(t)
+  const file = writeSample(dir, 'original', 300000)
+
+  const origin = node(t, net, 'origin')
+  const asked = []
+  const half = node(t, net, 'half', {
+    allowed: (root, peer) => { asked.push(peer.id); return b4a.equals(peer.publicKey, net.peers.get('friend').publicKey) }
+  })
+
+  const { link } = await origin.serve(file)
+  const partial = half.download(link, path.join(dir, 'half'))
+  await stepUntil(net, () => partial.have > 0 && partial.have < partial.total)
+  origin.swarm.destroy()
+  await net.settle()
+
+  // Two peers arrive. The only source in the swarm is the download in progress.
+  const friend = node(t, net, 'friend')
+  const stranger = node(t, net, 'stranger')
+
+  const refused = stranger.download(link, path.join(dir, 'stranger'))
+  const allowed = friend.download(link, path.join(dir, 'friend'))
+  let stalled = false
+  refused.on('stalled', () => { stalled = true })
+  await settleUntil(net, () => allowed.have > 0 && stalled)
+
+  t.ok(allowed.have > 0, 'the allowed peer gets what the partial holds')
+  t.is(refused.have, 0, 'the refused peer gets no piece of it')
+  t.is(new Set(asked).size, 2, 'allowed() was asked for each peer')
 })
 
 test('what a partial peer serves still verifies', async (t) => {
@@ -126,9 +159,9 @@ test('a peer announces new groups as it gets them', async (t) => {
 
 // ---------------------------------------------------------------------------
 
-function node (t, net, name) {
+function node (t, net, name, opts = {}) {
   // Deliberately shallow: these tests stop a transfer half way, which needs a half way.
-  const sw = new Swarmwire({ swarm: net.peer(name), window: 2 })
+  const sw = new Swarmwire({ swarm: net.peer(name), window: 2, ...opts })
 
   t.teardown(() => sw.destroy())
   return sw
