@@ -100,7 +100,7 @@ try {
       let link = null
       for (const s of seeders) link = await s.line('link ')
       const rates = []
-      for (let r = 0; r < 3; r++) rates.push(8 / ((await fetchOnce(testnet, link, path.join(dir, 'copy'))) / 1000))
+      for (let r = 0; r < 5; r++) rates.push(8 / ((await fetchOnce(testnet, link, path.join(dir, 'copy'))) / 1000))
       record('wire.seeders', n, 'MiB/s', rates, { better: 'higher' })
     } finally {
       await ts.close()
