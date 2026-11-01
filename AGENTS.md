@@ -133,6 +133,20 @@ there yet.
 window: 2 })`), or the default window of 32 swallows a small file in one step and there is no
 middle to act in.
 
+## Performance (`npm run perf`)
+
+Measured like tested: `npm run perf` runs `perf/scenarios/` (one-to-one throughput, a folder of many
+small files, several seeders; each at 2-3 sizes, over a real Hyperswarm on a local DHT) on Node then
+Bare, about two minutes, and appends one line per scenario to the committed `perf/history.jsonl`.
+`npm run perf:compare` prints the last run against the previous one (`-- --sha <sha>` for another),
+flagging changes over 15% beyond the spread.
+
+**Rule:** a change touching a hot path (transfers, scheduling, hashing, verification, the wire
+format) adds or updates a perf scenario in the *same* change and runs `npm run perf` before and
+after; the lead compares before merge. Scenarios mirror what apps do (SwarmFS, HyperBrowser), never
+benchmark-only shapes: an optimization that makes an app flow harder to write is refused. (Same
+rule in hypergraph and SwarmFS.) `npm run bench*` stay the deeper, by-hand studies.
+
 ## Conventions
 
 - ESM, Node >= 20, no build step, no TypeScript (JSDoc types where they help).
