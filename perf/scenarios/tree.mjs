@@ -40,5 +40,5 @@ for (const gib of sizes([1, 4, 16])) {
   record('wire.tree-memory', gib, 'B/group', trees, { flat: true })
   record('wire.store-memory', gib, 'B/group', stores, { flat: true })
   let k = 0
-  record('wire.proof', gib, 'ms', await time(() => tree.proof((k = (k * 1103515245 + 12345) >>> 0) % g), 10, { batch: 100 }))
+  record('wire.proof', gib, 'ms', await time(() => tree.proof((k = (k * 1103515245 + 12345) >>> 0) % g), 10, { batch: 100, warmup: 100 }))
 }
