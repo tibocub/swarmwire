@@ -68,7 +68,9 @@
     "bench": "node bench/swarm.js",
     "bench:net": "node bench/throughput.js",
     "bench:sim": "node bench/swarm-sim.js",
-    "check:pack": "node scripts/check-pack.js"
+    "check:pack": "node scripts/check-pack.js",
+    "perf": "node perf/run.mjs",
+    "perf:compare": "node perf/compare.mjs"
   },
   "dependencies": {
     "b4a": "^1.9.0",
