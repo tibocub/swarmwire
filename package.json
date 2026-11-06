@@ -91,7 +91,7 @@
     "bare-subprocess": "^5.0.0",
     "bare-url": "^2.1.7",
     "brittle": "^3.7.0",
-    "hyperdht": "^6.34.1"
+    "hyperdht": "^6.36.0"
   },
   "engines": {
     "bare": ">=1.16",
