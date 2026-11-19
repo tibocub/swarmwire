@@ -1,11 +1,10 @@
-// One big file's verification tree (hypergraph specs/research/scale-audit.md #5, perf
-// scenario 12; from hypergraph's bench/scale-audit/swarmwire-tree.mjs). Size = the file in GiB;
+// One big file's verification tree (from hypergraph's scale audit). Size = the file in GiB;
 // one 32 B hash per 16 KB group:
 //   wire.tree-memory  a served file's GroupTree (lib/tree.js), bytes per group. flat; the audit
 //                     measured ~205 B: 1.3 GB for an open 100 GB file
 //   wire.store-memory a download's NodeStore (lib/nodes.js) holding every group, bytes per group
 //   wire.proof        one proof from that tree (ms)
-// The other half of #5, re-hashing a reopened file over the 32 MB hash cache, is size divided
+// The other half of the audit item, re-hashing a reopened file over the 32 MB hash cache, is size divided
 // by wire.hash (transfer.mjs): not timed here (it would need files of 16 GB and more).
 
 import b4a from 'b4a'
