@@ -1,9 +1,5 @@
 /**
  * Peers that hold only part of the content, and peers that have just finished.
- *
- * This is what separates a swarm from a download: content outlives the machine it came from,
- * because everyone who has any of it can hand that part on. A downloader that could only take
- * would leave the original sender carrying every byte forever.
  */
 
 import test from 'brittle'
@@ -27,7 +23,6 @@ test('a finished download keeps serving what it fetched', async (t) => {
   await settleUntil(net, () => got.complete)
   await got
 
-  // The original sender goes away entirely.
   origin.swarm.destroy()
   await net.settle()
 
@@ -84,7 +79,6 @@ test('a half-finished download serves only the peers allowed() says yes to', asy
   origin.swarm.destroy()
   await net.settle()
 
-  // Two peers arrive. The only source in the swarm is the download in progress.
   const friend = node(t, net, 'friend')
   const stranger = node(t, net, 'stranger')
 
@@ -156,8 +150,6 @@ test('a peer announces new groups as it gets them', async (t) => {
   t.alike(read(path.join(dir, 'late')), read(file))
   t.ok(second.peersUsed.size >= 1)
 })
-
-// ---------------------------------------------------------------------------
 
 function node (t, net, name, opts = {}) {
   // Deliberately shallow: these tests stop a transfer half way, which needs a half way.

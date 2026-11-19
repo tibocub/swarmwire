@@ -84,9 +84,7 @@ test('a file larger than one group spans several', async (t) => {
   t.is((await source.readGroup(3)).length, 10, 'the last group is short')
 })
 
-// ---------------------------------------------------------------------------
 // Hashing on demand: there is no `add` step, so the second send must be cheap.
-// ---------------------------------------------------------------------------
 
 test('hashing is cached, so sending the same file twice rehashes nothing', async (t) => {
   clearHashCache()

@@ -4,10 +4,7 @@ import b4a from 'b4a'
 
 import { rootOf, formatLink, parseLink, discoveryTopic, swarmTopic } from '../../lib/address.js'
 
-// ---------------------------------------------------------------------------
-// Addressing. These are the BLAKE3 spec's own vectors: if they ever change,
-// every link anyone ever shared has stopped working.
-// ---------------------------------------------------------------------------
+// The BLAKE3 spec's own vectors: if these change, every shared link breaks.
 
 test('root of empty content is the BLAKE3 empty-input vector', (t) => {
   t.is(rootOf(b4a.alloc(0)), 'af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262')
@@ -41,10 +38,6 @@ test('a range verifies against the root without the whole file', (t) => {
   t.alike(b4a.from(verified), b4a.from(data.subarray(100000, 104096)))
   t.ok(slice.length < data.length / 8, 'proof is small relative to the content')
 })
-
-// ---------------------------------------------------------------------------
-// Links
-// ---------------------------------------------------------------------------
 
 const ROOT = '10db6398a68dff502d002912f54502fdde9ab55fb30bec32861a2f004d874fc8'
 const SECRET = '0'.repeat(63) + '1'
@@ -95,10 +88,6 @@ test('malformed links are rejected', (t) => {
   t.exception(() => formatLink({ root: 'nothex' }), /root/i)
 })
 
-// ---------------------------------------------------------------------------
-// Discovery
-// ---------------------------------------------------------------------------
-
 test('content topic is derived from the root alone when public', (t) => {
   const topic = discoveryTopic(ROOT)
   t.is(topic.length, 32)
@@ -139,8 +128,6 @@ test('bad topic inputs are rejected', (t) => {
   t.exception(() => discoveryTopic(ROOT, 'nothex'), /swarmKey/i)
   t.exception(() => swarmTopic('nothex'), /swarmKey/i)
 })
-
-// ---------------------------------------------------------------------------
 
 function sample (n) {
   const b = b4a.alloc(n)

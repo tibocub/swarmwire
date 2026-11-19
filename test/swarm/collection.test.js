@@ -124,8 +124,6 @@ test('byte progress covers the whole folder, from nothing to everything', async 
   t.ok(seen.every((p, i) => i === 0 || p.bytes >= seen[i - 1].bytes), 'never goes backwards')
 })
 
-// ---------------------------------------------------------------------------
-
 function setup (t) {
   const net = new TestNetwork()
   const dir = tmpdir(t)

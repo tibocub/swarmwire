@@ -21,7 +21,6 @@ console.log('PERF-RUNTIME ' + JSON.stringify(runtime))
 
 export const isBare = runtime.runtime === 'bare'
 
-// Milliseconds, as a float.
 export const now = () => Number(process.hrtime.bigint()) / 1e6
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -104,7 +103,6 @@ export function child (t, script, args, dir) {
   const exit = new Promise((resolve) => p.on('exit', () => { exited = true; resolve() }))
   exit.then(() => { for (const w of waiting.splice(0)) w.fail(new Error('child exited: ' + err.slice(-500))) })
   const c = {
-    // the rest of the first line starting with `prefix`
     line (prefix, ms = 60000) {
       return new Promise((resolve, reject) => {
         let timer = null

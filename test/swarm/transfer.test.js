@@ -75,10 +75,6 @@ test('the resume sidecar is gone once the download completes', async (t) => {
   t.absent(exists(out + '.swarmwire-part'))
 })
 
-// ---------------------------------------------------------------------------
-// Several peers
-// ---------------------------------------------------------------------------
-
 test('two seeders both contribute', async (t) => {
   const net = new TestNetwork()
   const dir = tmpdir(t)
@@ -89,7 +85,7 @@ test('two seeders both contribute', async (t) => {
   const leecher = node(t, net, 'leecher')
 
   const { link } = await one.serve(file)
-  await two.serve(file) // the same content, independently addressed
+  await two.serve(file)
 
   const download = leecher.download(link, path.join(dir, 'copy'))
   await settleUntil(net, () => download.complete)
@@ -118,10 +114,6 @@ test('a peer that does not have the content is simply not used', async (t) => {
   t.alike(read(path.join(dir, 'copy')), read(file))
   t.alike([...download.peersUsed], [idOf(seeder.swarm)])
 })
-
-// ---------------------------------------------------------------------------
-// Peers behaving badly. This is what the whole verification layer is for.
-// ---------------------------------------------------------------------------
 
 test('a lying peer cannot corrupt the download, and the honest one finishes it', async (t) => {
   const net = new TestNetwork()
@@ -188,7 +180,6 @@ test('a seeder that vanishes mid-transfer does not corrupt anything', async (t) 
 
   t.ok(partial > 0 && !download.complete, `stopped with ${partial}/${download.total} groups`)
 
-  // What did arrive is verified and still on disk, ready to resume.
   t.ok(exists(out + '.swarmwire-part'))
   t.is(read(out).length, 300000)
 })
@@ -229,7 +220,7 @@ test('stopping a download leaves the topic only for itself', async (t) => {
   const file = writeSample(dir, 'original', 50000)
 
   const both = node(t, net, 'both')
-  const { link, root } = await both.serve(file) // announcing, as a server
+  const { link, root } = await both.serve(file)
   const key = b4a.toString(discoveryTopic(root, null), 'hex')
 
   const download = both.download(link, path.join(dir, 'copy'))
@@ -260,8 +251,6 @@ test('a stopped download says nothing more', async (t) => {
 
   t.is(after, 0)
 })
-
-// ---------------------------------------------------------------------------
 
 function node (t, net, name) {
   const peer = net.peer(name)

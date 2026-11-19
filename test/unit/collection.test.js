@@ -56,9 +56,7 @@ test('total size is the sum of the parts', (t) => {
   t.is(totalSize([]), 0)
 })
 
-// ---------------------------------------------------------------------------
 // Everything below arrived from a stranger.
-// ---------------------------------------------------------------------------
 
 test('a path that climbs out of the destination is refused', (t) => {
   t.absent(isSafePath('../escape.txt'))
@@ -111,8 +109,6 @@ test('normalising is idempotent', (t) => {
   t.is(normalisePath('./a//b/'), 'a/b')
   t.is(normalisePath(normalisePath('./a//b/')), 'a/b')
 })
-
-// ---------------------------------------------------------------------------
 
 /** Build manifest bytes directly, bypassing the checks in encodeManifest. */
 function manifest (files) {

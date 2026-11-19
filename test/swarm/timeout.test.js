@@ -134,8 +134,6 @@ test('when every connected peer says it does not hold it, the download says stal
   await download.stop()
 })
 
-// ---------------------------------------------------------------------------
-
 function node (t, net, clock, name) {
   const sw = new Swarmwire({
     swarm: net.peer(name),

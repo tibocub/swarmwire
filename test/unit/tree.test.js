@@ -18,10 +18,7 @@ import {
 const SIZES = [0, 1, 1023, 1024, 1025, 16383, 16384, 16385, 32768, 49152, 65536, 70000, 300000]
 const LOGS = [4, 8]
 
-// ---------------------------------------------------------------------------
-// The root must be the plain BLAKE3 hash. This is the whole bet: if the tree
-// shape is wrong anywhere, these fail and `b3sum` stops agreeing with us.
-// ---------------------------------------------------------------------------
+// The root must be the plain BLAKE3 hash, or `b3sum` stops agreeing with us.
 
 for (const log of LOGS) {
   test(`root equals the BLAKE3 hash at every size (group log ${log})`, (t) => {
@@ -44,10 +41,6 @@ test('group count and layout', (t) => {
   t.alike(groupRange(0, 70000, 4), { offset: 0, length: 16384 })
   t.alike(groupRange(4, 70000, 4), { offset: 65536, length: 4464 }, 'the last group is short')
 })
-
-// ---------------------------------------------------------------------------
-// Proofs
-// ---------------------------------------------------------------------------
 
 test('every group verifies against the root with its proof', (t) => {
   for (const size of [1, 16385, 49152, 70000, 300000]) {
@@ -104,10 +97,7 @@ test('a single group needs no proof at all', (t) => {
   t.ok(verifyGroup({ root: tree.root, size: data.length, index: 0, data, proof: [] }))
 })
 
-// ---------------------------------------------------------------------------
-// Rejection. A peer that sends anything other than what was asked for must be
-// caught here, before a byte reaches the destination file.
-// ---------------------------------------------------------------------------
+// Anything but what was asked for is caught here, before it reaches the file.
 
 test('tampered data is rejected', (t) => {
   const data = sample(70000)
@@ -194,10 +184,6 @@ test('a size lie too small to change the shape is caught at the last group', (t)
     'the last group does not')
 })
 
-// ---------------------------------------------------------------------------
-// Building
-// ---------------------------------------------------------------------------
-
 test('the builder takes groups one at a time, so a file is never held in memory', (t) => {
   const data = sample(70000)
   const builder = new GroupTreeBuilder()
@@ -226,8 +212,6 @@ test('a tree can be rebuilt from its group hashes without the content', (t) => {
   t.alike(hexes(restored.proof(2)), hexes(tree.proof(2)))
 })
 
-// ---------------------------------------------------------------------------
-
 function treeOf (data, groupLog = DEFAULT_GROUP_LOG) {
   return GroupTree.fromContent(data, { groupLog })
 }
@@ -243,9 +227,7 @@ function hexes (list) {
   return list.map((h) => b4a.toString(b4a.from(h), 'hex'))
 }
 
-// ---------------------------------------------------------------------------
 // Partial knowledge: what a half-finished download can prove.
-// ---------------------------------------------------------------------------
 
 test('a group hash can be recomputed from the group alone', (t) => {
   const data = sample(70000)
@@ -298,7 +280,6 @@ test('a complete tree proves everything, hole or not', (t) => {
   const data = sample(70000)
   const full = treeOf(data, DEFAULT_GROUP_LOG)
 
-  // Sanity: a tree built from every hash behaves exactly like one built from content.
   const rebuilt = new GroupTree([...full.groupHashes], { size: data.length })
 
   t.ok(rebuilt.complete)

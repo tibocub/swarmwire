@@ -36,9 +36,7 @@ test('groups may arrive in any order', async (t) => {
   t.ok(dest.complete)
 })
 
-// ---------------------------------------------------------------------------
 // The whole point: nothing unverified reaches the file.
-// ---------------------------------------------------------------------------
 
 test('tampered data is refused and never written', async (t) => {
   const { source, out } = await fixture(t, 70000)
@@ -77,10 +75,6 @@ test('a refused group does not count as progress', async (t) => {
   t.is(dest.have, 0)
   t.alike(dest.missing(), [0, 1, 2, 3, 4])
 })
-
-// ---------------------------------------------------------------------------
-// Resume
-// ---------------------------------------------------------------------------
 
 test('a half-finished download resumes where it stopped', async (t) => {
   const { source, out, dir } = await fixture(t, 70000)
@@ -152,8 +146,6 @@ test('the file is preallocated, so writes can land anywhere', async (t) => {
     'the last group is at the right offset'
   )
 })
-
-// ---------------------------------------------------------------------------
 
 async function fixture (t, size) {
   const dir = tmpdir(t)
