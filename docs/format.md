@@ -42,11 +42,11 @@ large. Grouping chunks shrinks it while keeping the same root hash:
 | **16 KiB (default)** | ~4 MiB | 16 KiB |
 | 256 KiB | ~256 KiB | 256 KiB |
 
-**Defaults: 16 KiB verification groups, 64 KiB request blocks.** 16 KiB is what the rest of the
-world converged on — BitTorrent v1's request block, BitTorrent v2's leaf block size, and
-bao-tree's default — so it is where we start, not where we must stay. Both numbers are
-negotiated per transfer and must be re-judged against real measurements once M2's benchmark
-exists; very large files may want bigger groups to keep outboards small.
+**Default: 16 KiB groups, one group per request.** 16 KiB is what the rest of the world
+converged on — BitTorrent v1's request block, BitTorrent v2's leaf block size, and bao-tree's
+default — so it is where we start, not where we must stay. The group size (`groupLog`) is sent
+in the handshake and both sides must use the same one: a peer advertising another is ignored.
+Very large files may want bigger groups to keep outboards small.
 
 `blake3-bao` calls grouped encoding "Iroh chunk groups" because iroh popularised the technique.
 **swarmwire does not depend on iroh, Rust, or any native module.** Keeping the whole stack pure
@@ -64,7 +64,7 @@ swarmwire://<root-hex>[?s=<size>][&n=<name>][&k=<secret-hex>]
 | `s` | Size hint in bytes. Lets the receiver preallocate and show progress before any peer answers. Unverified until the content is complete. |
 | `n` | Filename hint, percent-encoded. Display only — never used as a path without sanitising. |
 | `k` | 32-byte swarm key, hex. See §4. |
-| `t` | What the content is: `c` for a collection (§6). Absent means a plain file. |
+| `t` | What the content is: `c` for a collection (§5). Absent means a plain file. |
 
 A link with no parameters is valid and sufficient: everything else is an optimisation or a
 privacy choice.
@@ -98,8 +98,9 @@ swarm key, so only people holding the link can derive the topic. The cost is tha
 holders of the same content cannot help, so a private swarm is only as resilient as the people
 in it.
 
-`send` defaults to **private**. Sharing a file should not announce your holdings to anyone who
-can guess the hash; `--public` opts into the wider swarm.
+The library's `serve` is **public** unless it is given a `secret`; an application that does not
+want to announce its holdings to anyone who can guess the hash passes one. (`swarmwire-cli`
+defaults to private.)
 
 ### Swarm topics — "here is a group of people"
 
@@ -125,7 +126,7 @@ it may be *displayed* as a word sequence from a fixed wordlist, hyperbeam-style.
 display encoding of the same bytes, never a second kind of secret: words in, bytes out, same
 topic. Not in v0.
 
-## 6. Collections
+## 5. Collections
 
 A folder is shared as a **manifest**: a list of the files in it, each named by its address.
 The manifest is itself content, so it has an address like anything else — sharing a folder is
@@ -153,7 +154,7 @@ manifest with a different address. Folders that change are SwarmFS's problem, on
 connections that topic already produced, so a folder of a thousand files still costs one
 announce.
 
-## 5. Stability rules
+## 6. Stability rules
 
 **Fixed for v0 — changing any of these invalidates existing links:**
 
@@ -162,8 +163,8 @@ announce.
 - The collection manifest's encoding, including that entries are sorted by path
 - The domain-separation strings `swarmwire/v0/discovery` and `swarmwire/v0/swarm`
 
-**Free to change at any time** (negotiated per connection, never stored in a link): chunk group
-size, request block size, wire messages, scheduling, how outboard trees are cached, the sidecar
+**Free to change at any time** (carried per connection, never stored in a link): chunk group
+size, wire messages, scheduling, how outboard trees are cached, the sidecar
 format for partial downloads.
 
 The handshake carries a version and the group size (`groupLog`); it carries no capability set.
@@ -180,6 +181,5 @@ serves, which is how it counts its seeders and leechers. No message exists for t
    bytes) or a shorter custom list. Deferred until the feature is actually built.
 2. **Should a peer announce partial content on the content topic?** Announcing while still
    downloading helps the swarm, but tells the topic you are interested before you have anything.
-   Measure in M2.
 3. **Per-size default group size.** A single 16 KiB default is one less rule to remember; a
    size-dependent default keeps outboards small for very large files. Decide with the benchmark.

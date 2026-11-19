@@ -10,7 +10,11 @@ changelog say so; anything marked *planned* is a direction, not a promise.
 swarmwire takes a content root (a plain BLAKE3 hash) and returns verified bytes on disk, from
 whichever connected peers hold them. The application owns the network connection, keys, names,
 directories, users and permissions. A "folder" in this document is called a *collection* in the
-code (`serveCollection`, `downloadCollection`). See `AGENTS.md` for the invariants this contract rests on.
+code (`serveCollection`, `downloadCollection`). The invariants this contract rests on are in
+`docs/development.md`; every option is listed in `docs/api.md`.
+
+In the table below, *Delivered by* names the feature under `specs/` that will deliver a planned
+capability, and *Proof* the test that shows an existing one.
 
 ## 2. Capabilities
 
@@ -54,7 +58,7 @@ The application can decide, per peer and per content, whether content is served.
   of time is a deny.
 - A deny is answered **exactly as content swarmwire does not hold**. A refused peer learns nothing
   about what is held, its size or its name.
-- With no decision installed, content is served as it is today.
+- With no decision installed, every request is answered from what is held.
 - A folder where some files are allowed and some denied transfers the allowed ones; the denied
   ones read as absent, and the folder download reports which were unavailable.
 
@@ -90,7 +94,7 @@ what was measured, is in `docs/scaling.md` in the repository (not part of the pa
 ### 3.4 Identity
 
 swarmwire knows the remote public key of each connection and nothing else about a peer. Tying a
-key to a user or device is the application's job (Principle II).
+key to a user or device is the application's job.
 
 ### 3.5 Choosing files of a folder
 
@@ -110,7 +114,7 @@ download in progress can answer. `peer` is `{ id, publicKey }`: `id` as in `peer
 `publicKey` the remote key the swarm gave at `connection` (null if it gave none), the same object
 for the whole connection. An open file is shared, but served to a peer **only after `resolve`
 said yes for that peer** while it was open: answering one peer never answers another. A resolver
-that ignores `peer` works as before; it is just asked once per peer. The file is then opened and
+that ignores `peer` still works; it is just asked once per peer. The file is then opened and
 hashed, and served **only if it hashes to that root**. A changed file, a null, and a resolver that throws are all answered exactly as content
 swarmwire does not hold. At most `maxOpen` resolved files stay open; the least recently used is
 closed and reopened through `resolve` if asked for again. A resolved file nobody has read for
@@ -123,7 +127,7 @@ A download still in progress serves what it has verified (that is what lets peer
 they are all fetching), but `resolve` cannot answer for it: the app has not recorded the file as
 held yet. `new Swarmwire({ allowed })`: `allowed(rootHex, peer)` (may be async, same `peer`) is
 asked before a download in progress is served to a peer; anything but a truthy answer, a throw
-included, is a refusal. Without `allowed` a download in progress serves any peer, as before.
+included, is a refusal. Without `allowed` a download in progress serves any peer.
 `serve`d content is served to any peer that asks.
 
 **Grants last as long as the connection.** A yes from `resolve` (while the file is open) or from
