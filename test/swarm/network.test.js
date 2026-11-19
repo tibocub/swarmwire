@@ -231,8 +231,6 @@ test('settle refuses to spin forever', async (t) => {
   await t.exception(net.settle({ maxRounds: 5 }), /did not settle/)
 })
 
-// ---------------------------------------------------------------------------
-
 function collect (peer) {
   const seen = []
   const attach = (stream) => stream.on('data', (data) => seen.push(b4a.toString(data)))

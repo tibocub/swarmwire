@@ -116,7 +116,6 @@ export class TestNetwork {
     this._discover()
   }
 
-  /** Frames waiting to be delivered. */
   get inflight () {
     return this.queue.length
   }
@@ -126,8 +125,6 @@ export class TestNetwork {
     for (const peer of this.peers.values()) peer.destroy()
     this.queue = []
   }
-
-  // -- internals ------------------------------------------------------------
 
   _send (from, to, data) {
     if (this._destroyed) return
@@ -245,7 +242,6 @@ class TestPeer extends EventEmitter {
     return false
   }
 
-  /** Every connection this peer currently holds. */
   get connections () {
     return [...this._connections.values()]
   }
@@ -360,8 +356,6 @@ class Link {
     return finishes + this.latency
   }
 }
-
-// -- helpers ----------------------------------------------------------------
 
 function sharesTopic (a, b) {
   // Someone has to be announcing: two peers that are only looking never find each other.

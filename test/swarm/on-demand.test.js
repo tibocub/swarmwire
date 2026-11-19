@@ -58,7 +58,7 @@ test('a file that changed since it was recorded is answered as not held', async 
   const { net, dir, make } = setup(t)
   const file = writeSample(dir, 'held', 40000)
   const link = await linkTo(t, file)
-  fs.writeFileSync(file, b4a.alloc(40000, 1)) // same size, other bytes
+  fs.writeFileSync(file, b4a.alloc(40000, 1))
   fs.utimesSync(file, 1, 1) // and surely another mtime: the hash cache keys on it, to the millisecond
 
   make('holder', { resolve: () => file })
@@ -295,8 +295,6 @@ test('a file rewritten with the same size and mtime after it was hashed is answe
   t.is(download.have, 0)
   t.is(download.rejected, 0, 'the remembered hashes did not let a wrong byte through')
 })
-
-// ---------------------------------------------------------------------------
 
 /**
  * Nodes whose network is the application's: swarmwire sees every connection the workspace

@@ -1,7 +1,7 @@
 /**
  * swarmwire - content-addressed file transfer between filesystems, over Hyperswarm.
  *
- * Runs on Node and on Bare. See docs/roadmap.md for what exists and what is next.
+ * Runs on Node and on Bare. docs/contract.md lists which exports are stable.
  */
 
 export { Swarmwire, Download } from './lib/swarmwire.js'

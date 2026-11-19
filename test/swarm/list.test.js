@@ -254,8 +254,6 @@ test('a chosen file that was partly fetched resumes where it stopped', async (t)
   t.alike(fs.readFileSync(out), fs.readFileSync(path.join(source, 'big.bin')))
 })
 
-// -- helpers ----------------------------------------------------------------
-
 function setup (t, label = '') {
   const net = new TestNetwork()
   const dir = tmpdir(t)

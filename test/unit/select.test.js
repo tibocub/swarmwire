@@ -12,8 +12,6 @@ const bits = (count, held) => {
 
 const eligible = { has: () => false, peerHas: () => true, claimed: () => false }
 
-// -- Availability -----------------------------------------------------------
-
 test('availability counts add, set, unset and remove', (t) => {
   const a = new Availability(4)
 
@@ -62,8 +60,6 @@ test('availability always equals a recount, whatever the events', (t) => {
   }
 })
 
-// -- candidates -------------------------------------------------------------
-
 test('candidates scan from the start point and wrap', (t) => {
   t.alike(candidates({ count: 6, from: 4, limit: 4, ...eligible }), [4, 5, 0, 1])
 })
@@ -90,8 +86,6 @@ test('a peer holding only groups far down the file still yields candidates', (t)
   t.ok(candidates({ count: 5000, from: 4100, ...eligible, peerHas: far }).length > 0)
   t.ok(candidates({ count: 5000, from: 0, ...eligible, peerHas: far }).length > 0, 'wrapping finds them')
 })
-
-// -- rank -------------------------------------------------------------------------------------------------------------------
 
 test('the group fewest peers hold goes first', (t) => {
   const a = new Availability(4)

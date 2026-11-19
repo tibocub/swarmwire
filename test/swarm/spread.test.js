@@ -96,8 +96,6 @@ test('one group, and a few dozen, arrive byte-identical', async (t) => {
   }
 })
 
-// -- helpers ----------------------------------------------------------------
-
 function node (t, net, name, { random, ...options } = {}) {
   const sw = new Swarmwire({ swarm: net.peer(name), groupLog: GROUP_LOG, ...options })
   if (random) sw.random = random

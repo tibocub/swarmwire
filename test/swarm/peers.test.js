@@ -224,8 +224,6 @@ test('a folder seeder holds the list and every file; the list alone is a leecher
   t.alike(sender.counts(link), { peers: 2, seeders: 1, leechers: 1 })
 })
 
-// -- helpers ----------------------------------------------------------------
-
 function setup (t) {
   const net = new TestNetwork()
   const dir = tmpdir(t)

@@ -39,8 +39,8 @@ between strategies under identical conditions, not as predictions.
 
 **Checked against real nodes.** `test/swarm/spread.test.js` has one sender and a hundred
 newcomers on the deterministic network, 200 groups. After three files' worth of sender uploads
-the share of the file uploaded at least once is **0.04** with the first release's code (8 groups
-of 200; all hundred downloaders made the same first request) and **0.92** with this feature. The
+the share of the file uploaded at least once is **0.04** with file-order selection (8 groups
+of 200; all hundred downloaders made the same first request) and **0.92** with random selection. The
 model on a crowd of that shape gives 0.08 and 0.95 (`test/unit/sim.test.js`).
 
 ## Selection
@@ -49,7 +49,7 @@ model on a crowd of that shape gives 0.08 and 0.95 (`test/unit/sim.test.js`).
 
 | strategy | median (ticks) | range | median time | rate per downloader | of ideal | last (ticks) | last range |
 |---|---|---|---|---|---|---|---|
-| file order (first release) | 8348 | 6555-8349 | 109 s | 0.08 MB/s | 6% | 8410 | 6633-8416 |
+| file order | 8348 | 6555-8349 | 109 s | 0.08 MB/s | 6% | 8410 | 6633-8416 |
 | random window and ties | 897 | 894-911 | 11.8 s | 0.71 MB/s | 57% | 948 | 936-983 |
 
 "Of ideal" compares with receiving one group every tick from the start (512 ticks, which is 1.25 MB/s: the
@@ -78,7 +78,7 @@ from the baseline.
 | 300 downloaders, 5 seeders | 554 / 576 | 557 / 576 (0 / 0) | 569 / 586 (+2.7% / +1.7%) | 554 / 576 (0 / 0) |
 | 300 downloaders, uplink 2 | 505 / 519 | 484 / 500 (-4.2% / -3.7%) | 498 / 519 (-1.4% / 0) | 496 / 533 (-1.8% / +2.7%) |
 
-The bar (SC-004) is 5% on the median or the last finisher at 1,000 downloaders, with the other
+The bar is 5% on the median or the last finisher at 1,000 downloaders, with the other
 not worse by more than 2%, and the gain larger than the spread across seeds.
 
 - **Endgame: not built.** 2% at best, and 124,864 groups sent twice (against 512,000 needed),

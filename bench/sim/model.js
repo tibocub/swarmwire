@@ -56,8 +56,6 @@ export function simulate (options = {}) {
   const revealed = new Uint32Array(G) // how often each group has been shown to someone
   const stats = { wasted: 0, seederUploads: 0, seederRepeats: 0, covered: new Set() }
 
-  // -- what a peer may see of a neighbour -------------------------------------------------
-
   const offers = (p, n, g) => {
     if (n.has[g] === 0 || (p.deny.size > 0 && p.deny.has(n.id * G + g))) return false
     return !(n.seed && strategy.seeder === 'reveal') || n.shown.get(p.id)[g] === 1
@@ -76,8 +74,6 @@ export function simulate (options = {}) {
     for (let g = 0; g < G; g++) if (!flags[g] && p.has[g] === 0) open.push(g)
     for (const g of rank(open, { at: (g) => revealed[g] }, random).slice(0, k)) show(seeder, p, g)
   }
-
-  // -- the three things that happen to a peer ---------------------------------------------
 
   const acquire = (p, g) => {
     p.has[g] = 1
@@ -98,7 +94,6 @@ export function simulate (options = {}) {
     }
   }
 
-  /** Stop waiting for a request: true if it was still outstanding. */
   const release = (p, n, g) => {
     if (!p.inflight.get(n.id).delete(g)) return false
 
@@ -140,8 +135,6 @@ export function simulate (options = {}) {
     if (release(p, n, g)) narrow(p, n)
   }
 
-  // -- serving ---------------------------------------------------------------------------
-
   const serve = (t, n) => {
     if (n.slow && t % s.slowEvery !== 0) return
     for (let k = n.seed ? s.seederUplink : s.uplink; k > 0 && n.queue.length > 0; k--) {
@@ -169,9 +162,7 @@ export function simulate (options = {}) {
     return false
   }
 
-  // -- asking ----------------------------------------------------------------------------
-
-  /** The first release's rule: weigh the first 256 missing groups from the start, then drop what the peer lacks. */
+  /** File order: weigh the first 256 missing groups from the start, then drop what the peer lacks. */
   const legacyPool = (p, n) => {
     const pool = []
     for (let g = 0, seen = 0; g < G && seen < SCAN_LIMIT; g++) {
@@ -212,8 +203,6 @@ export function simulate (options = {}) {
     }
     return wanted.length > 0 && free > 0
   }
-
-  // -- the clock -------------------------------------------------------------------------
 
   if (strategy.seeder === 'reveal') {
     for (const sd of peers.filter((x) => x.seed)) {
@@ -288,7 +277,7 @@ function build (s, random) {
     const p = {
       id,
       seed,
-      has: new Uint8Array(G), // 1 where the group is held
+      has: new Uint8Array(G),
       count: seed ? G : 0,
       neighbours: [],
       availability: new Availability(G),
