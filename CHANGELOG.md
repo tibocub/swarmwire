@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **No protomux clash with hypergraph.** protomux's hand-written types ship as a module of
+  swarmwire's own (`dist/types/vendor/protomux.d.cts`), not a global `declare module 'protomux'`,
+  which clashed with hypergraph's (`Duplicate identifier 'Protomux'`) in a strict build loading both.
 - **Types.** The library is checked by TypeScript in strict mode (`npm run typecheck`, 0 errors,
   enforced by a test) and ships `.d.ts` files (`types` and the `exports` `types` condition),
   with its shapes exported as types: `ParsedLink`, `LinkFields`, `FileEntry`, `FileList`,
