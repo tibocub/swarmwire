@@ -117,6 +117,19 @@ test('with nobody to ask it waits, and can be told to stop', async (t) => {
   t.ok(true, 'the awaited read settles once stopped')
 })
 
+test('a read cut short by destroying the node resolves to nothing, like a stop', async (t) => {
+  const { net, dir, sender, receiver } = setup(t)
+  const source = folder(dir, 'original', { 'a.txt': 100 })
+  const { link } = await sender.serveCollection(source)
+  await sender.destroy() // the only provider is gone
+
+  const reading = receiver.readList(link)
+  await net.settle()
+  await receiver.destroy()
+
+  t.is(await reading, undefined)
+})
+
 test('a reader looks for the folder without announcing itself', async (t) => {
   const { net, dir, sender, receiver } = setup(t)
   const source = folder(dir, 'original', { 'a.txt': 100 })

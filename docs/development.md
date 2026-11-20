@@ -48,14 +48,17 @@ Mobile builds run on Bare, and the same suite runs on both.
 drive is small: the fs and swarm tests write real files.
 
 ```bash
-npm test              # unit, fs and swarm tests on Node
+npm test              # unit, fs and swarm tests on Node (the typecheck too)
+npm run typecheck     # tsc strict over index.js, lib/ and scripts/ (jsconfig.json)
 npm run test:net      # real Hyperswarm on a private local DHT
 npm run test:bare     # the npm test suite on Bare
 npm run test:all      # all of the above, plus net on Bare
 npm run check:pack    # the published package holds only the library
 ```
 
-- `test/unit/` — pure logic: addressing, trees, selection, manifests, the contract.
+- `test/unit/` — pure logic: addressing, trees, selection, manifests, the contract, and the
+  types: `typecheck.test.js` fails on any type error, `types-consumer.test.js` builds the
+  published `.d.ts` and compiles a strict TypeScript user against them (both skipped on Bare).
 - `test/fs/` — real files in a scratch directory: hashing in place, verified writes, resume.
 - `test/swarm/` — many peers in one process over the in-memory network in
   `test/helpers/network.js`. Nothing is delivered until `await net.settle()`, so a test decides
@@ -99,7 +102,10 @@ applications do, not benchmark-only shapes.
 
 ## Conventions
 
-- ESM, Node 20 or later, no build step, no TypeScript (JSDoc types where they help).
+- ESM, Node 20 or later, no build step, no TypeScript source. Types are JSDoc, checked strict
+  by `npm run typecheck`: every object shape gets a `@typedef`, `any` and casts only with a
+  one-line reason. Packages that ship no types (protomux) get the parts we use in `types/`;
+  `npm run types` writes the published declarations to `dist/types/` (ignored, built on pack).
 - Small files with one job. `lib/swarmwire.js` is already past ~300 lines: new behaviour goes
   in its own file and the node calls it (as `holdings.js`, `listing.js`, `on-demand.js` do).
 - Comments explain why, not what (see [CONTRIBUTING.md](../CONTRIBUTING.md)).

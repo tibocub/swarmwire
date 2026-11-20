@@ -6,7 +6,9 @@ import fs from 'fs'
 import { ContentSource, clearHashCache, hashCache, hashFile } from '../../lib/source.js'
 import * as api from '../../index.js'
 import { verifyGroup, groupRange, groupLength, DEFAULT_GROUP_LOG } from '../../lib/tree.js'
+import { OnDemand, IDLE_CLOSE } from '../../lib/on-demand.js'
 import { tmpdir, writeSample, sample, read } from '../helpers/tmp.js'
+import { TestClock } from '../helpers/clock.js'
 
 test('a file is addressed by its plain BLAKE3 hash', async (t) => {
   const dir = tmpdir(t)
@@ -137,6 +139,24 @@ test('an open descriptor is served like a path, and left open', async (t) => {
 
   await source.close()
   t.is(fs.fstatSync(fd).size, 70000, 'the descriptor is still the caller\'s')
+})
+
+test('a descriptor served on demand is closed idle without throwing', async (t) => {
+  const dir = tmpdir(t)
+  const file = writeSample(dir, 'picked.bin', 70000)
+  const fd = fs.openSync(file, 'r')
+  t.teardown(() => { try { fs.closeSync(fd) } catch {} })
+
+  const clock = new TestClock()
+  const onDemand = new OnDemand({ resolve: () => `fd:${fd}`, max: 64, groupLog: DEFAULT_GROUP_LOG, timers: clock })
+  const root = blake3.hashHex(read(file))
+  const source = await onDemand.get(root, { id: 'p', publicKey: null })
+  t.ok(source, 'served')
+
+  // The idle close chains .catch() on close(): a descriptor's close must return a promise too.
+  t.execution(() => clock.advance(IDLE_CLOSE))
+  t.absent(onDemand.open.has(root), 'closed idle')
+  t.is(fs.fstatSync(fd).size, 70000, 'the descriptor is still open')
 })
 
 test('hashFile gives the plain BLAKE3 root of a file, and is exported', async (t) => {

@@ -6,8 +6,10 @@
 
 import { execSync } from 'child_process'
 
-const ALLOWED = [/^index\.js$/, /^lib\//, /^docs\/(format|contract)\.md$/, /^package\.json$/, /^README\.md$/, /^LICENSE$/]
+const ALLOWED = [/^index\.js$/, /^lib\//, /^dist\/types\/(index\.d\.ts$|lib\/|vendor\/)/, /^docs\/(format|contract)\.md$/, /^package\.json$/, /^README\.md$/, /^LICENSE$/]
 
+/** @type {[{files: {path: string}[]}]} */
+// @ts-expect-error JSON.parse reads the Buffer as its text
 const [{ files }] = JSON.parse(execSync('npm pack --dry-run --json', { stdio: ['ignore', 'pipe', 'ignore'] }))
 const paths = files.map((file) => file.path)
 
