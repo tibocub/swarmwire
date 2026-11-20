@@ -15,6 +15,12 @@ npm run test:all      # plus real-swarm tests on both
 
 Set `TMP` and `TEMP` to a folder on E: first (C: is nearly full). No lockfile is committed.
 
+## Types
+
+`npm run typecheck` (tsc strict, `jsconfig.json`) must pass with no error; a test enforces it.
+JSDoc `@typedef` for every object shape; `any`, casts and `@ts-expect-error` only with a one-line
+reason. Untyped packages get hand-written types in `types/`.
+
 ## Comments
 
 Keep a comment only when it explains why something is done in a way the code can't show:

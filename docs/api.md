@@ -56,9 +56,9 @@ swarm gave (or null). It is the same object for the whole connection, and a yes 
 |---|---|---|
 | `serve(path, { secret, name })` | `{ root, size, link }` | Hashes the file in place and announces it. Public unless `secret` (64 hex) is given. `path` may be `fd:N`. |
 | `serveCollection(dir, { secret, name, files })` | `{ root, size, files, link }` | Serves every file under `dir` plus an in-memory manifest; one announce. `files: [{ path, from }]` replaces the directory walk. Symbolic links are skipped. |
-| `download(link, outPath, { announce, destination, temporary })` | `Download` | Starts at once. `announce: false` joins no topic (used for files of a folder). `destination` is an async factory replacing the file at `outPath`. The same root twice returns the same `Download`. |
+| `download(link, outPath, { announce, destination, temporary })` | `Download` | Starts at once. `link` is a link or its fields (`{ root, size, secret }`; only `root` is required, a missing `size` is taken from the first peer). `announce: false` joins no topic (used for files of a folder). `destination` is an async factory replacing the file at `outPath`. The same root twice returns the same `Download`. |
 | `downloadCollection(link, dir, { onfile, onprogress })` | `{ files, bytes }` | List first, then each file in order. |
-| `readList(link)` | thenable `{ files, size }` | A folder's list, without fetching files or announcing. `stop()` gives up (resolves `undefined`). |
+| `readList(link)` | thenable `{ files, size }` | A folder's list, without fetching files or announcing. `stop()` gives up (resolves `undefined`), and so does `destroy()` of the node. |
 | `downloadFile(link, file, outPath)` | `Download` | One entry of `readList`, through the folder's peers. |
 | `unserve(root)` | `Promise` | Stops serving and leaves the topic. |
 | `counts(link)` | `{ peers, seeders, leechers }` | Direct connections only. |

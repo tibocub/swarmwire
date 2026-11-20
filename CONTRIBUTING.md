@@ -9,6 +9,7 @@
 4. A change to a hot path runs `npm run perf` before and after.
 5. New or changed exports update [docs/contract.md](docs/contract.md) and
    [docs/api.md](docs/api.md); user-visible changes go in [CHANGELOG.md](CHANGELOG.md).
-6. Comments explain *why*, not *what*. Public exports get JSDoc.
+6. Comments explain *why*, not *what*. Public exports get JSDoc, and `npm run typecheck` passes
+   (strict TypeScript over the JSDoc; `npm test` runs it too).
 
 Code is written in [standard](https://standardjs.com) style: ESM, no semicolons, no build step.

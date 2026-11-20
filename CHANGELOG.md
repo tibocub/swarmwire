@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- **Types.** The library is checked by TypeScript in strict mode (`npm run typecheck`, 0 errors,
+  enforced by a test) and ships `.d.ts` files (`types` and the `exports` `types` condition),
+  with its shapes exported as types: `ParsedLink`, `LinkFields`, `FileEntry`, `FileList`,
+  `PeerIdentity`, `Swarm`, `SwarmSession`, `DestinationLike`, `Timers` and more. `Swarmwire` and
+  `Download` events are typed. `@types/node` is now a dependency.
+- **`download({ root })` works without a size.** A link given as fields with no `size` key never
+  finished (it opened a destination of `NaN` groups); it now waits for a peer to say the size,
+  as a link with no size hint does.
+- **A descriptor served on demand no longer crashes the process.** With `resolve` returning
+  `fd:N`, the idle close 5 s after the last read threw from a timer (`close()` on a descriptor
+  returned nothing to chain `.catch()` on).
+- **Destroying the node during `readList` resolves the list to `undefined`**, as `stop()` does,
+  instead of rejecting with an internal `TypeError`.
+
 - **`resolve(root, peer)` is told who asks** (SwarmFS S10). `peer` is `{ id, publicKey }`. A file
   open for one peer is no longer served to another peer without asking `resolve` for that one:
   before, anyone connected could fetch any file the node had open, or had just downloaded, by

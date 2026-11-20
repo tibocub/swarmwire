@@ -4,6 +4,15 @@
   "description": "Content-addressed, verified file transfer between filesystems over Hyperswarm. No copies, no cores, no trackers.",
   "type": "module",
   "main": "index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./index.js"
+    },
+    "./package.json": "./package.json",
+    "./*": "./*"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -23,6 +32,9 @@
   "files": [
     "index.js",
     "lib/",
+    "dist/types/index.d.ts",
+    "dist/types/lib/",
+    "dist/types/vendor/",
     "docs/format.md",
     "docs/contract.md"
   ],
@@ -70,9 +82,13 @@
     "bench:sim": "node bench/swarm-sim.js",
     "check:pack": "node scripts/check-pack.js",
     "perf": "node perf/run.mjs",
-    "perf:compare": "node perf/compare.mjs"
+    "perf:compare": "node perf/compare.mjs",
+    "typecheck": "tsc -p jsconfig.json",
+    "types": "tsc -p jsconfig.json --noEmit false --declaration --emitDeclarationOnly --outDir dist/types && node scripts/types.js",
+    "prepack": "npm run types"
   },
   "dependencies": {
+    "@types/node": "^26.6.6",
     "b4a": "^1.9.0",
     "bare-events": "^2.9.0",
     "bare-fs": "^4.8.2",
@@ -91,7 +107,8 @@
     "bare-subprocess": "^5.0.0",
     "bare-url": "^2.1.7",
     "brittle": "^3.7.0",
-    "hyperdht": "^6.36.0"
+    "hyperdht": "^6.36.0",
+    "typescript": "~5.9.3"
   },
   "engines": {
     "bare": ">=1.16",

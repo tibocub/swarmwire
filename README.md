@@ -103,10 +103,20 @@ More in [docs/api.md](docs/api.md):
 
 The command-line tool is [`swarmwire-cli`](https://www.npmjs.com/package/swarmwire-cli).
 
+## Types
+
+The library is plain JavaScript typed with JSDoc and checked by TypeScript in strict mode
+(`npm run typecheck`), with nothing to compile. Editors (VS Code and others) read those types:
+completion, hover docs and errors as you type, in JavaScript too. TypeScript users get `.d.ts`
+files for `swarmwire-lib`, built by `npm run types` (into `dist/types/`, on `npm pack`), with the
+shapes the API takes and returns exported as types (`ParsedLink`, `FileEntry`, `PeerIdentity`,
+`Swarm`, ...). They need no setup: Node's types (`@types/node`) come with them as a dependency.
+
 ## Development
 
 ```bash
 npm install
+npm run typecheck     # strict TypeScript over the library, no error allowed
 npm test              # unit, filesystem and in-memory swarm tests, Node
 npm run test:bare     # the same on Bare
 npm run test:all      # everything, including real Hyperswarm on a private DHT

@@ -35,6 +35,17 @@ test('the receiver only needs the link', async (t) => {
   t.alike(read(path.join(dir, 'copy')), read(file))
 })
 
+test('a link given as fields needs only the root: the size comes from a peer', async (t) => {
+  const { net, dir, seeder, leecher, file } = await twoPeers(t, 40000)
+
+  const { root } = await seeder.serve(file)
+  const download = leecher.download({ root }, path.join(dir, 'copy'))
+  await settleUntil(net, () => download.complete)
+  await download
+
+  t.alike(read(path.join(dir, 'copy')), read(file))
+})
+
 test('nothing is copied on the sending side', async (t) => {
   const { net, dir, seeder, leecher, file } = await twoPeers(t, 40000)
   const before = listing(dir)
