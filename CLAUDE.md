@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 swarmwire moves bytes by content address over Hyperswarm. It sits under SwarmFS
-(`E:\Code\P2P\SwarmFS`; the other `SwarmFS*` folders there are dead copies) and must never
+(`../SwarmFS`) and must never
 import SwarmFS, hypergraph or hypercore. Do not copy SwarmFS's merkle tree: it duplicates the
 last node of odd levels, so `[a,b,c]` and `[a,b,c,c]` share a root. Branch per feature off `main`.
 
@@ -13,7 +13,7 @@ npm run test:bare     # same suite on Bare
 npm run test:all      # plus real-swarm tests on both
 ```
 
-Set `TMP` and `TEMP` to a folder on E: first (C: is nearly full). No lockfile is committed.
+No lockfile is committed.
 
 ## Types
 
